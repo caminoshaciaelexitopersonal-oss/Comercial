@@ -122,3 +122,12 @@ Refresca un token de acceso expirado usando un token de refresco.
 -   **`GET /{id}/`**: Obtiene los detalles de una campaña específica.
 -   **`PUT /{id}/`**: Actualiza una campaña.
 -   **`DELETE /{id}/`**: Elimina una campaña.
+ 
+
+### Content Studio (`/api/bff/content-studio/`)
+
+-   **`POST /generate-text/`**: Genera texto usando un proveedor de IA y guarda la interacción.
+    -   Requiere autenticación.
+    -   Body: `{"provider": "gemini", "model": "gemini-1.5-flash", "prompt": "Un prompt interesante."}`
+    -   Respuesta: `{"result": "El texto generado."}`
+ 

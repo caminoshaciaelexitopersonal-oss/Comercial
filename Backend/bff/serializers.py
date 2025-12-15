@@ -63,3 +63,16 @@ class AIInteractionSerializer(serializers.ModelSerializer):
         model = AIInteraction
         fields = ['id', 'user', 'provider', 'prompt', 'result', 'created_at']
         read_only_fields = ['id', 'created_at']
+ 
+
+
+# --- Serializers para la Fase 3 ---
+
+class GenerateTextSerializer(serializers.Serializer):
+    """
+    Serializador para validar los datos de entrada para la generación de texto.
+    """
+    provider = serializers.CharField(required=True)
+    model = serializers.CharField(required=True)
+    prompt = serializers.CharField(required=True)
+ 
