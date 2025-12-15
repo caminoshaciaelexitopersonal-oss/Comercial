@@ -3,12 +3,13 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.log
+db.sqlite3
 
 # Virtualenv
 venv/
 env/
 .venv/
 
-# Django
-*.log
-db.sqlite3
+# Environment variables
+.env
