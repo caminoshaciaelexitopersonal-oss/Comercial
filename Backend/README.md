@@ -1,26 +1,24 @@
-# Backend para Plataforma Comercial con IA
+# Backend en Django para Plataforma Comercial con IA
 
-Este backend está diseñado para servir como una capa de servicio robusta y segura para la plataforma comercial, gestionando múltiples proveedores de Inteligencia Artificial y exponiendo una API modular para interactuar con el frontend.
+Este backend está construido con Python y Django para servir como una capa de servicio de IA robusta y modular. Gestiona múltiples proveedores de IA y expone una API RESTful para el frontend.
 
 ## Arquitectura
 
-El backend sigue una arquitectura modular para reflejar la estructura de componentes del frontend.
-
--   **`src/components`**: Contiene la lógica de negocio y las rutas de API específicas para cada módulo funcional de la plataforma (ej. `contentStudio`).
--   **`src/core/ai`**: Es el corazón del sistema de IA.
-    -   **`AIManager.ts`**: Un gestor central que inicializa y proporciona acceso a los diferentes proveedores de IA.
-    -   **`IAiProvider.ts`**: Una interfaz que define un contrato estándar para todos los proveedores de IA, garantizando que se puedan intercambiar fácilmente.
-    -   **`providers/`**: Contiene las implementaciones concretas para cada servicio de IA (Gemini, Ollama, etc.).
--   **`src/config`**: Centraliza la configuración de la aplicación, como las claves de API.
--   **`src/services`**: Contiene servicios para interactuar con APIs externas, como `OllamaService`.
--   **`src/routes`**: Define las rutas de la API que no pertenecen a un componente específico.
+-   **`main_config/`**: El proyecto principal de Django.
+-   **`api/`**: La app de Django que contiene toda la lógica de la API.
+    -   **`components/`**: Lógica de negocio específica por módulo.
+    -   **`services/ai_manager/`**: El núcleo del sistema de IA, con un gestor y proveedores intercambiables.
+    -   **`views/`**: Vistas de Django REST Framework que manejan las peticiones HTTP.
+    -   **`serializers.py`**: Serializadores para la validación y formato de datos de la API.
+    -   **`urls.py`**: Definiciones de las rutas de la API.
 
 ## 1. Primeros Pasos
 
 ### Prerrequisitos
 
--   [Node.js](https://nodejs.org/) (versión 16 o superior)
--   Un servidor [Ollama](https://ollama.com/) corriendo (si se desea usar esta funcionalidad).
+-   Python 3.12
+-   `pip` y `venv`
+-   Un servidor [Ollama](https://ollama.com/) corriendo (para la funcionalidad de Ollama).
 
 ### Instalación
 
@@ -28,153 +26,94 @@ El backend sigue una arquitectura modular para reflejar la estructura de compone
     ```bash
     cd Backend
     ```
-2.  Instala las dependencias:
+
+2.  Crea y activa un entorno virtual de Python:
     ```bash
-    npm install
+    python3.12 -m venv venv
+    source venv/bin/activate
+    ```
+
+3.  Instala las dependencias desde el archivo `requirements.txt`:
+    ```bash
+    pip install -r requirements.txt
     ```
 
 ## 2. Configuración
 
-El backend gestiona todas las claves de API y configuraciones a través de variables de entorno.
-
 1.  Crea un archivo llamado `.env` en la raíz de la carpeta `Backend`.
 
-2.  Añade las siguientes variables al archivo `.env`, rellenando los valores según sea necesario:
+2.  Añade las siguientes variables de entorno:
 
     ```env
-    # Puerto en el que correrá el servidor del backend
-    PORT=3001
+    # Clave secreta de Django. Puedes generar una nueva con `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`
+    DJANGO_SECRET_KEY="tu_clave_secreta_aqui"
 
     # Clave de API para Google Gemini
-    GEMINI_API_KEY=tu_clave_de_api_de_gemini
+    GEMINI_API_KEY="tu_clave_de_api_de_gemini"
 
-    # (Opcional) Clave de API para OpenAI
-    # OPENAI_API_KEY=tu_clave_de_api_de_openai
-
-    # (Opcional) Endpoint para tu servidor local de Ollama
-    # Si no se especifica, se usará http://localhost:11434 por defecto
-    OLLAMA_ENDPOINT=http://localhost:11434
+    # Endpoint para tu servidor local de Ollama
+    OLLAMA_ENDPOINT="http://localhost:11434"
     ```
-
-    **Importante:** El backend solo habilitará los proveedores de IA para los que se haya proporcionado una clave de API o un endpoint válido.
+    El `AIManager` solo inicializará los proveedores para los que se proporcionen las credenciales.
 
 ## 3. Ejecutar el Servidor
 
--   **Para desarrollo (con recarga automática):**
+1.  Aplica las migraciones de Django (necesario la primera vez):
     ```bash
-    npm run dev
+    python manage.py migrate
     ```
-    El servidor se iniciará en el puerto especificado en el archivo `.env` (o en el 3001 por defecto).
 
--   **Para producción:**
+2.  Inicia el servidor de desarrollo de Django:
     ```bash
-    # 1. Compilar el código TypeScript a JavaScript
-    npm run build
-
-    # 2. Iniciar el servidor desde los archivos compilados en la carpeta /dist
-    npm start
+    python manage.py runserver
     ```
+    El servidor se iniciará en `http://127.0.0.1:8000/`.
 
 ## 4. Referencia de la API
 
-### Gestión de IA
+Todos los endpoints están prefijados con `/api/`.
+
+### Gestión de IA y Ollama
 
 ---
 
-#### `GET /api/ai/providers`
+#### `GET /api/ai/providers/`
+Obtiene la lista de los proveedores de IA disponibles.
+-   **Respuesta Exitosa (200):** `["gemini", "ollama"]`
 
-Obtiene una lista de los proveedores de IA que han sido inicializados con éxito en el backend.
+#### `GET /api/ollama/models/`
+Lista los modelos descargados en el servidor de Ollama.
+-   **Respuesta Exitosa (200):** `[{"name": "llama3:latest", ...}]`
 
--   **Respuesta Exitosa (200):**
-    ```json
-    ["gemini", "ollama"]
-    ```
+#### `POST /api/ollama/models/pull/`
+Inicia la descarga de un nuevo modelo en Ollama.
+-   **Body:** `{"model_name": "phi3"}`
+-   **Respuesta Exitosa (202):** `{"status": "Model pull for 'phi3' initiated."}`
 
 ### Content Studio
 
 ---
 
-#### `POST /api/content-studio/generate-text`
-
-Genera texto utilizando el proveedor de IA especificado.
-
--   **Body (JSON):**
+#### `POST /api/content-studio/generate-text/`
+Genera texto con un proveedor de IA.
+-   **Body:**
     ```json
     {
-      "provider": "gemini", // o "ollama"
-      "params": {
-        "model": "gemini-1.5-flash", // o "llama3" para ollama
-        "prompt": "Escribe un eslogan para una nueva marca de café."
-      }
+        "provider": "gemini",
+        "model": "gemini-1.5-flash",
+        "prompt": "Escribe un eslogan para una cafetería."
     }
     ```
--   **Respuesta Exitosa (200):**
+-   **Respuesta Exitosa (200):** `{"result": "El mejor café para tus mañanas."}`
+
+#### `POST /api/content-studio/generate-image/`
+Genera una imagen con un proveedor de IA.
+-   **Body:**
     ```json
     {
-      "result": "Café 'Amanecer': Tu día empieza aquí."
+        "provider": "gemini",
+        "model": "imagen-4.0",
+        "prompt": "Un gato en una nave espacial."
     }
     ```
-
-#### `POST /api/content-studio/generate-image`
-
-Genera una imagen. (Nota: La implementación es conceptual y depende del modelo).
-
--   **Body (JSON):**
-    ```json
-    {
-      "provider": "gemini",
-      "params": {
-        "model": "imagen-4.0-generate-001",
-        "prompt": "Un astronauta en un caballo en la luna, estilo fotorrealista."
-      }
-    }
-    ```
--   **Respuesta Exitosa (200):**
-    ```json
-    {
-      "imageUrl": "data:image/jpeg;base64,..."
-    }
-    ```
-
-### Gestión de Ollama
-
----
-
-#### `GET /api/ollama/models`
-
-Obtiene la lista de modelos que están descargados en el servidor de Ollama.
-
--   **Respuesta Exitosa (200):**
-    ```json
-    [
-      {
-        "name": "llama3:latest",
-        "modified_at": "2024-05-15T14:00:00Z",
-        "size": 4700000000
-      }
-    ]
-    ```
-
-#### `POST /api/ollama/models/pull`
-
-Inicia la descarga (pull) de un nuevo modelo en el servidor de Ollama. La operación es asíncrona.
-
--   **Body (JSON):**
-    ```json
-    {
-      "modelName": "phi3"
-    }
-    ```
--   **Respuesta Exitosa (202 Accepted):**
-    ```json
-    {
-      "status": "Model pull for 'phi3' initiated."
-    }
-    ```
-
-## Extensibilidad
-
-Para añadir un nuevo proveedor de IA:
-1.  Crea una nueva clase en `src/core/ai/providers/` que implemente la interfaz `IAiProvider`.
-2.  Añade su configuración en `src/config/ai-config.ts`.
-3.  Importa e inicializa el nuevo proveedor en el `AIManager.ts`.
+-   **Respuesta Exitosa (200):** `{"image_url": "data:image/jpeg;base64,..."}`

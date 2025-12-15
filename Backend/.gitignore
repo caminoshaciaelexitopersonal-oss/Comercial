@@ -1,4 +1,14 @@
-node_modules
-dist
-.env
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+env/
+.venv/
+
+# Django
 *.log
+db.sqlite3
