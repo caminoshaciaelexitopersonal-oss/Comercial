@@ -7,8 +7,10 @@ from rest_framework_simplejwt.views import (
 )
 from .views import (
     UserRegistrationView, CampaignViewSet, CustomerViewSet,
+ 
     FunnelViewSet, AssetViewSet, AIInteractionViewSet,
     GenerateTextView
+ 
 )
 
 # Creamos un router para registrar los ViewSets
@@ -27,7 +29,9 @@ urlpatterns = [
 
     # Endpoints generados por el router para las entidades de la Fase 2
     path('', include(router.urls)),
+ 
 
     # Endpoints de la Fase 3 (Content Studio)
     path('content-studio/generate-text/', GenerateTextView.as_view(), name='generate-text'),
+ 
 ]
