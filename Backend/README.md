@@ -111,3 +111,14 @@ Refresca un token de acceso expirado usando un token de refresco.
         "access": "ey..."
     }
     ```
+
+## 4. API de la Fase 2 (CRUD)
+
+### Campañas (`/api/bff/campaigns/`)
+
+-   **`GET /`**: Lista todas las campañas del tenant del usuario autenticado.
+-   **`POST /`**: Crea una nueva campaña.
+    -   Body: `{"name": "Mi Nueva Campaña", "goal": "El objetivo."}`
+-   **`GET /{id}/`**: Obtiene los detalles de una campaña específica.
+-   **`PUT /{id}/`**: Actualiza una campaña.
+-   **`DELETE /{id}/`**: Elimina una campaña.
