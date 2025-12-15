@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { generateImage, editImage, generateVideo, pollVideoOperation, generateText } from '../services/geminiService';
+import { generateImage, editImage, generateVideo, pollVideoOperation, generateText, generateTextFromBackend } from '../services/geminiService';
 import { LoadingSpinner, MediaIcon, CalendarIcon, SparklesIcon, FacebookIcon, InstagramIcon, TikTokIcon, YouTubeIcon, XIcon } from './icons';
 import { useSettings } from '../context/SettingsContext';
 import PlatformFormatSelector from './PlatformFormatSelector';
@@ -394,8 +394,13 @@ const SchedulerView: React.FC<{ initialContent: ContentToSchedule | null, onClea
   const handleGenerateContent = async () => {
     setIsGenerating(true);
     const prompt = "Genera una idea para una publicación en redes sociales para una empresa de tecnología. Incluye un texto atractivo y algunos hashtags relevantes.";
-    const model = provider === 'gemini' ? 'gemini-2.5-flash' : 'llama3';
-    const content = await generateText(provider, { ollamaEndpoint, model }, prompt);
+
+    // Simulación del Auth Token
+    const authToken = "simulated-auth-token"; // En una app real, esto vendría del estado de autenticación.
+
+    // Llamada a la nueva función del backend
+    const content = await generateTextFromBackend(prompt, authToken);
+
     setPostContent(content);
     setIsGenerating(false);
   };

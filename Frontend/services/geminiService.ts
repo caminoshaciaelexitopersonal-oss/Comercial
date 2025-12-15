@@ -58,6 +58,31 @@ export const generateText = async (provider: LLMProvider, config: ProviderConfig
   }
 };
 
+// --- NUEVA FUNCIÓN PARA LA FASE 3 ---
+export const generateTextFromBackend = async (prompt: string, authToken: string): Promise<string> => {
+  try {
+    const response = await fetch('/api/ai/text', { // Asumiendo que el proxy de Vite está configurado
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ prompt: prompt }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.result;
+  } catch (error) {
+    console.error('Error generating text from backend:', error);
+    return "Lo siento, hubo un error al generar el texto desde el backend.";
+  }
+};
+
 export const analyzeMessage = async (provider: LLMProvider, config: ProviderConfig, message: string): Promise<{ sentiment: 'positive' | 'neutral' | 'negative', tags: string[] }> => {
     try {
         if (provider === 'ollama') {

@@ -1,85 +1,46 @@
-# Backend en Django para Plataforma Comercial con IA (Arquitectura por Capas)
+# Backend - Sistema Operativo de IA para Marketing
 
-Este backend está construido con Python y Django, siguiendo una arquitectura por capas estricta para asegurar la separación de responsabilidades y la escalabilidad, sirviendo a un frontend inmutable.
+Este backend está construido con Python y Django para servir como un sistema operativo de IA proveedor-agnóstico, escalable y autónomo.
 
-## 1. Arquitectura y Modelo de Datos
+## 1. Arquitectura del Módulo de IA
 
-El backend se divide en capas (`bff`, `domain`, `ai`, `infrastructure`, `shared`). El modelo de datos para el Arquitecto de Embudos es el siguiente:
+El núcleo es un **Orquestador de Tareas** (`AIManager`) que recibe solicitudes de tareas (ej. "generar texto") y las enruta dinámicamente al proveedor de IA compatible más adecuado (Gemini, Ollama, etc.).
 
-```markdown
-- Tenant / Cadena (id, nombre, color_primario, metadata)
-  - Categoria (id, tenant_id, nombre)
-    - Subcategoria (id, categoria_id, nombre)
-      - LandingPage (id, subcategoria_id, slug, estado)
-        - Embudo (id, landing_page_id, nombre, orden, activo)
-          - Pagina (id, embudo_id, tipo, orden)
-            - Bloque (id, pagina_id, tipo, orden, config_json)
-```
-Los modelos `Embudo`, `Pagina` y `Bloque` tienen **versionado automático** para soportar Undo/Redo.
+- **Capas:** `bff` -> `domain` -> `ai` -> `infrastructure`
+- **Flujo de Datos:** El frontend solicita una tarea, no un proveedor. El `AIManager` selecciona el proveedor y ejecuta. El `domain` service registra cada interacción en la base de datos.
 
 ## 2. Configuración e Instalación
 (Instrucciones de `venv`, `pip install`, `.env` y `migrate` se mantienen como antes)
 
 ...
 
-## 3. API del Arquitecto de Embudos
+## 3. API del Estudio de IA (`/api/ai/`)
 
-### API Pública
+Requiere autenticación.
+
+### Asistente de Redacción
 ---
-#### `GET /api/public/funnel/{slug}/`
-Obtiene la estructura completa de un embudo publicado. No requiere autenticación.
+#### `POST /api/ai/text`
+Genera texto sanitizado y registra la interacción.
+- **Body:** `{"prompt": "Un prompt para generar texto."}`
+- **Respuesta:** `{"result": "Texto generado y limpio."}`
 
-- **Respuesta Exitosa (200):**
-  ```json
-  {
-    "slug": "mi-landing-page",
-    "embudo": {
-      "id": 1,
-      "nombre": "Embudo Principal",
-      "paginas": [
-        {
-          "id": 1,
-          "tipo": "oferta",
-          "orden": 0,
-          "bloques": [
-            {
-              "id": 1,
-              "tipo": "hero",
-              "orden": 0,
-              "config_json": { "title": "¡Oferta Especial!" }
-            }
-          ]
-        }
-      ]
-    }
-  }
-  ```
-
-### API Privada del Constructor (`/api/builder/`)
+### Generador de Campañas
 ---
-Requiere autenticación (Bearer Token).
+#### `POST /api/ai/campaign`
+Genera una estructura de campaña en JSON, validada y corregida por el backend.
+- **Body:** `{"business_goal": "Lanzar un nuevo producto ecológico."}`
+- **Respuesta:** Un array JSON con la estructura de la campaña.
 
-#### Embudos (`/api/builder/funnels/`)
-- `GET /`: Lista los embudos del tenant.
-- `POST /`: Crea un nuevo embudo y su `LandingPage` asociada.
-  - Body: `{"nombre_embudo": "Mi Nuevo Embudo", "subcategoria_id": 1}`
-- `GET /{id}/`: Obtiene un embudo.
-- `PUT /{id}/`: Actualiza un embudo.
-- `DELETE /{id}/`: Elimina un embudo.
-- `POST /{id}/publish/`: Publica la landing page asociada.
+### Generador de Video (Asíncrono)
+---
+#### `POST /api/ai/video`
+Inicia un trabajo de generación de video.
+- **Body:** `{"prompt": "Un video de un gato volando."}`
+- **Respuesta:** `{"job_id": "some-unique-task-id"}`
 
-#### Páginas (`/api/builder/pages/`)
-- `GET /`: Lista todas las páginas del tenant.
-- `POST /`: Crea una nueva página para un embudo.
-  - Body: `{"embudo": 1, "tipo": "oferta", "orden": 1}`
-- `GET /{id}/`, `PUT /{id}/`, `DELETE /{id}/`: Gestión estándar.
+#### `GET /api/ai/video/status/{job_id}`
+Consulta el estado de un trabajo de generación de video.
+- **Respuesta:** `{"status": "processing"}`
 
-#### Bloques (`/api/builder/blocks/`)
-- `GET /`: Lista todos los bloques del tenant.
-- `POST /`: Crea un nuevo bloque para una página.
-  - Body: `{"pagina": 1, "tipo": "hero", "orden": 0, "config_json": {"title": "Nuevo Título"}}`
-- `GET /{id}/`, `PUT /{id}/`, `DELETE /{id}/`: Gestión estándar.
-
-### API de Autenticación
-(Endpoints de `/api/auth/register/`, `/api/auth/token/`, etc. se mantienen como antes)
-...
+... (Otros endpoints de Creative Suite como `/api/ai/image` seguirían un patrón similar) ...

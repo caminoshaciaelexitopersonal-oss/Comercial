@@ -17,6 +17,9 @@ urlpatterns = [
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
+    # --- API del Estudio de IA ---
+    path('ai/', include('bff.urls.ai_urls')),
+
     # --- API Privada del Constructor ---
     path('builder/', include(builder_router.urls)),
 
