@@ -1,119 +1,124 @@
-# Backend en Django para Plataforma Comercial con IA
+# Backend en Django para Plataforma Comercial con IA (Arquitectura por Capas)
 
-Este backend está construido con Python y Django para servir como una capa de servicio de IA robusta y modular. Gestiona múltiples proveedores de IA y expone una API RESTful para el frontend.
+Este backend está construido con Python y Django, siguiendo una arquitectura por capas estricta para asegurar la separación de responsabilidades y la escalabilidad.
 
-## Arquitectura
+## 1. Arquitectura
 
--   **`main_config/`**: El proyecto principal de Django.
--   **`api/`**: La app de Django que contiene toda la lógica de la API.
-    -   **`components/`**: Lógica de negocio específica por módulo.
-    -   **`services/ai_manager/`**: El núcleo del sistema de IA, con un gestor y proveedores intercambiables.
-    -   **`views/`**: Vistas de Django REST Framework que manejan las peticiones HTTP.
-    -   **`serializers.py`**: Serializadores para la validación y formato de datos de la API.
-    -   **`urls.py`**: Definiciones de las rutas de la API.
+El backend se divide en las siguientes capas:
 
-## 1. Primeros Pasos
+-   **`bff/`**: Backend For Frontend. Actúa como un adaptador que expone APIs específicas para las necesidades del frontend. No contiene lógica de negocio.
+-   **`domain/`**: El corazón de la aplicación. Contiene la lógica y las reglas de negocio puras, sin conocimiento de la UI o la base de datos.
+-   **`ai/`**: Módulo independiente y agnóstico para interactuar con cualquier proveedor de IA.
+-   **`infrastructure/`**: Se encarga de la persistencia de datos (modelos, migraciones) y la comunicación con la base de datos.
+-   **`shared/`**: Contiene utilidades, DTOs y excepciones comunes a todas las capas.
+
+## 2. Configuración e Instalación
 
 ### Prerrequisitos
+- Python 3.12, `pip`, `venv`
 
--   Python 3.12
--   `pip` y `venv`
--   Un servidor [Ollama](https://ollama.com/) corriendo (para la funcionalidad de Ollama).
-
-### Instalación
-
-1.  Navega a la carpeta `Backend`:
+### Pasos
+1.  **Navegar al Directorio**:
     ```bash
     cd Backend
     ```
-
-2.  Crea y activa un entorno virtual de Python:
+2.  **Crear y Activar Entorno Virtual**:
     ```bash
     python3.12 -m venv venv
     source venv/bin/activate
     ```
-
-3.  Instala las dependencias desde el archivo `requirements.txt`:
+3.  **Instalar Dependencias**:
     ```bash
     pip install -r requirements.txt
     ```
-
-## 2. Configuración
-
-1.  Crea un archivo llamado `.env` en la raíz de la carpeta `Backend`.
-
-2.  Añade las siguientes variables de entorno:
-
+4.  **Configurar Variables de Entorno**:
+    Crea un archivo `.env` en el directorio `Backend` y añade las siguientes variables:
     ```env
-    # Clave secreta de Django. Puedes generar una nueva con `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`
+    # Clave secreta de Django. Puedes generar una con:
+    # python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
     DJANGO_SECRET_KEY="tu_clave_secreta_aqui"
 
-    # Clave de API para Google Gemini
-    GEMINI_API_KEY="tu_clave_de_api_de_gemini"
+    # (Opcional) Habilitar modo DEBUG para desarrollo. Por defecto es False.
+    DJANGO_DEBUG="True"
 
-    # Endpoint para tu servidor local de Ollama
+    # (Opcional) Claves para proveedores de IA
+    GEMINI_API_KEY="tu_clave_de_api_de_gemini"
     OLLAMA_ENDPOINT="http://localhost:11434"
     ```
-    El `AIManager` solo inicializará los proveedores para los que se proporcionen las credenciales.
-
-## 3. Ejecutar el Servidor
-
-1.  Aplica las migraciones de Django (necesario la primera vez):
+5.  **Aplicar Migraciones de la Base de Datos**:
     ```bash
     python manage.py migrate
     ```
-
-2.  Inicia el servidor de desarrollo de Django:
+6.  **Ejecutar el Servidor**:
     ```bash
     python manage.py runserver
     ```
-    El servidor se iniciará en `http://127.0.0.1:8000/`.
+    El servidor estará disponible en `http://127.0.0.1:8000/`.
 
-## 4. Referencia de la API
+## 3. API de Autenticación (Fase 1)
 
-Todos los endpoints están prefijados con `/api/`.
+Todos los endpoints están prefijados con `/api/bff/`.
 
-### Gestión de IA y Ollama
+### `POST /api/bff/auth/register/`
+Registra un nuevo usuario y crea un Tenant asociado a él.
 
----
-
-#### `GET /api/ai/providers/`
-Obtiene la lista de los proveedores de IA disponibles.
--   **Respuesta Exitosa (200):** `["gemini", "ollama"]`
-
-#### `GET /api/ollama/models/`
-Lista los modelos descargados en el servidor de Ollama.
--   **Respuesta Exitosa (200):** `[{"name": "llama3:latest", ...}]`
-
-#### `POST /api/ollama/models/pull/`
-Inicia la descarga de un nuevo modelo en Ollama.
--   **Body:** `{"model_name": "phi3"}`
--   **Respuesta Exitosa (202):** `{"status": "Model pull for 'phi3' initiated."}`
-
-### Content Studio
-
----
-
-#### `POST /api/content-studio/generate-text/`
-Genera texto con un proveedor de IA.
 -   **Body:**
     ```json
     {
-        "provider": "gemini",
-        "model": "gemini-1.5-flash",
-        "prompt": "Escribe un eslogan para una cafetería."
+        "username": "nuevo_usuario",
+        "password": "una_contraseña_segura",
+        "email": "usuario@ejemplo.com",
+        "tenant_name": "Mi Organización"
     }
     ```
--   **Respuesta Exitosa (200):** `{"result": "El mejor café para tus mañanas."}`
+-   **Respuesta Exitosa (201):**
+    ```json
+    {
+        "message": "User 'nuevo_usuario' registered successfully."
+    }
+    ```
 
-#### `POST /api/content-studio/generate-image/`
-Genera una imagen con un proveedor de IA.
+### `POST /api/bff/auth/token/`
+Autentica a un usuario y devuelve un par de tokens (acceso y refresco).
+
 -   **Body:**
     ```json
     {
-        "provider": "gemini",
-        "model": "imagen-4.0",
-        "prompt": "Un gato en una nave espacial."
+        "username": "nuevo_usuario",
+        "password": "una_contraseña_segura"
     }
     ```
--   **Respuesta Exitosa (200):** `{"image_url": "data:image/jpeg;base64,..."}`
+-   **Respuesta Exitosa (200):**
+    ```json
+    {
+        "access": "ey...",
+        "refresh": "ey..."
+    }
+    ```
+
+### `POST /api/bff/auth/token/refresh/`
+Refresca un token de acceso expirado usando un token de refresco.
+
+-   **Body:**
+    ```json
+    {
+        "refresh": "ey..."
+    }
+    ```
+-   **Respuesta Exitosa (200):**
+    ```json
+    {
+        "access": "ey..."
+    }
+    ```
+
+## 4. API de la Fase 2 (CRUD)
+
+### Campañas (`/api/bff/campaigns/`)
+
+-   **`GET /`**: Lista todas las campañas del tenant del usuario autenticado.
+-   **`POST /`**: Crea una nueva campaña.
+    -   Body: `{"name": "Mi Nueva Campaña", "goal": "El objetivo."}`
+-   **`GET /{id}/`**: Obtiene los detalles de una campaña específica.
+-   **`PUT /{id}/`**: Actualiza una campaña.
+-   **`DELETE /{id}/`**: Elimina una campaña.
