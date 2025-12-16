@@ -7,12 +7,14 @@ class OllamaProvider(AIBaseProvider):
     """
     Proveedor de IA para un servidor local de Ollama.
     """
+ 
     _capabilities = ["text"]
 
     @property
     def capabilities(self) -> list[str]:
         return self._capabilities
 
+ 
     def __init__(self, endpoint: str):
         if not endpoint:
             raise ValueError("Ollama endpoint is required.")

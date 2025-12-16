@@ -1,5 +1,6 @@
 # ai/services/ai_manager/ai_base_provider.py
 from abc import ABC, abstractmethod
+ 
 from typing import List, Optional, Literal
 
 class AIBaseProvider(ABC):
@@ -25,3 +26,4 @@ class AIBaseProvider(ABC):
         pass
 
     # Se pueden añadir más métodos abstractos para otras capacidades (video, etc.)
+ 

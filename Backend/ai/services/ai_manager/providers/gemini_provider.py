@@ -7,12 +7,14 @@ class GeminiProvider(AIBaseProvider):
     """
     Proveedor de IA para Google Gemini.
     """
+ 
     _capabilities = ["text", "image"] # Asumiendo que Gemini puede hacer ambas
 
     @property
     def capabilities(self) -> list[str]:
         return self._capabilities
 
+ 
     def __init__(self, api_key: str):
         if not api_key:
             raise ValueError("Google Gemini API key is required.")

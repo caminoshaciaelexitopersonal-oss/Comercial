@@ -1,3 +1,4 @@
+ 
 # Backend - Sistema Operativo de IA para Marketing
 
 Este backend está construido con Python y Django para servir como un sistema operativo de IA proveedor-agnóstico, escalable y autónomo.
@@ -44,3 +45,4 @@ Consulta el estado de un trabajo de generación de video.
 - **Respuesta:** `{"status": "processing"}`
 
 ... (Otros endpoints de Creative Suite como `/api/ai/image` seguirían un patrón similar) ...
+ 

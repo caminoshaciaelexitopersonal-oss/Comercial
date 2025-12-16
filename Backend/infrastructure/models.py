@@ -1,6 +1,7 @@
 # infrastructure/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+ 
 from simple_history.models import HistoricalRecords
 
 # Sobrescribimos el modelo Tenant para añadir los nuevos campos
@@ -8,19 +9,23 @@ class Tenant(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nombre de la Cadena")
     primary_color = models.CharField(max_length=7, default="#FFFFFF", verbose_name="Color Primario")
     metadata = models.JSONField(default=dict, blank=True)
+ 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
+ 
 # Mantenemos los modelos de usuario y rol para la autenticación
 class Role(models.Model):
     name = models.CharField(max_length=100)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='roles')
+ 
     def __str__(self):
         return f"{self.name} ({self.tenant.name})"
 
 class User(AbstractUser):
+ 
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     roles = models.ManyToManyField(Role, related_name='users', blank=True)
     groups = None
@@ -118,3 +123,4 @@ class AsyncTask(models.Model):
 
     def __str__(self):
         return f"Task {self.id} ({self.task_type}) - {self.status}"
+ 

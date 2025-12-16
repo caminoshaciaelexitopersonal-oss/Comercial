@@ -1,4 +1,5 @@
 # domain/services/funnel_service.py
+ 
 from infrastructure.models import LandingPage, Embudo, Subcategoria, Tenant
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
@@ -58,3 +59,4 @@ def publish_funnel(tenant: Tenant, funnel_id: int) -> LandingPage:
     landing_page.estado = 'publicado'
     landing_page.save()
     return landing_page
+ 
