@@ -1,21 +1,30 @@
 # ai/services/ai_manager/ai_manager.py
 import os
 from dotenv import load_dotenv
+ 
+from typing import List, Optional
 from .providers.gemini_provider import GeminiProvider
 from .providers.ollama_provider import OllamaProvider
+from .ai_base_provider import AIBaseProvider
+ 
 
 load_dotenv()
 
 class AIManager:
     """
-    Gestiona y proporciona acceso a los diferentes proveedores de IA.
+ 
+    Orquestador de Tareas de IA.
+    Registra proveedores y enruta las solicitudes a un proveedor compatible.
+ 
     """
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(AIManager, cls).__new__(cls)
-            cls._instance.providers = {}
+ 
+            cls._instance.providers: List[AIBaseProvider] = []
+ 
             cls._instance._initialize_providers()
         return cls._instance
 
@@ -25,7 +34,9 @@ class AIManager:
         gemini_api_key = os.getenv("GEMINI_API_KEY")
         if gemini_api_key:
             try:
-                self.providers["gemini"] = GeminiProvider(api_key=gemini_api_key)
+ 
+                self.providers.append(GeminiProvider(api_key=gemini_api_key))
+ 
                 print("Gemini provider initialized.")
             except Exception as e:
                 print(f"Failed to initialize Gemini provider: {e}")
@@ -33,21 +44,35 @@ class AIManager:
         ollama_endpoint = os.getenv("OLLAMA_ENDPOINT")
         if ollama_endpoint:
             try:
-                self.providers["ollama"] = OllamaProvider(endpoint=ollama_endpoint)
+ 
+                self.providers.append(OllamaProvider(endpoint=ollama_endpoint))
+ 
                 print("Ollama provider initialized.")
             except Exception as e:
                 print(f"Failed to initialize Ollama provider: {e}")
 
-        if not self.providers:
-            print("Warning: No AI providers were initialized. Check your .env file.")
+        if not self.providers: 
+ 
+            print("Warning: No AI providers were initialized.")
 
-    def get_provider(self, provider_name: str):
-        provider = self.providers.get(provider_name)
+    def _find_provider_for_capability(self, capability: str) -> Optional[AIBaseProvider]:
+        """Encuentra el primer proveedor disponible que soporte la capacidad requerida."""
+        for provider in self.providers:
+            if provider.has_capability(capability):
+                return provider
+        return None
+
+    def execute_text_generation(self, prompt: str, model: str, **kwargs) -> str:
+        provider = self._find_provider_for_capability('text')
         if not provider:
-            raise ValueError(f"AI provider '{provider_name}' is not available or configured.")
-        return provider
+            raise RuntimeError("No provider available for text generation.")
+        return provider.generate_text(prompt=prompt, model=model, **kwargs)
 
-    def get_available_providers(self) -> list[str]:
-        return list(self.providers.keys())
+    def execute_image_generation(self, prompt: str, model: str, **kwargs) -> Optional[str]:
+        provider = self._find_provider_for_capability('image')
+        if not provider:
+            raise RuntimeError("No provider available for image generation.")
+        return provider.generate_image(prompt=prompt, model=model, **kwargs)
+ 
 
 ai_manager = AIManager()

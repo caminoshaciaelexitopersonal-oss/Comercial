@@ -1,132 +1,126 @@
 # infrastructure/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+ 
+from simple_history.models import HistoricalRecords
 
+# Sobrescribimos el modelo Tenant para añadir los nuevos campos
 class Tenant(models.Model):
-    """
-    Representa un Tenant o una organización en el sistema.
-    Cada Tenant aísla sus propios datos.
-    """
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, verbose_name="Nombre de la Cadena")
+    primary_color = models.CharField(max_length=7, default="#FFFFFF", verbose_name="Color Primario")
+    metadata = models.JSONField(default=dict, blank=True)
+ 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
+ 
+# Mantenemos los modelos de usuario y rol para la autenticación
 class Role(models.Model):
-    """
-    Define un rol dentro de un Tenant (ej. Admin, Editor, Viewer).
-    """
     name = models.CharField(max_length=100)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='roles')
-    # Aquí se podrían añadir permisos específicos si fuera necesario.
-
+ 
     def __str__(self):
         return f"{self.name} ({self.tenant.name})"
 
 class User(AbstractUser):
-    """
-    Modelo de usuario personalizado que extiende el de Django.
-    Cada usuario debe pertenecer a un Tenant.
-    """
+ 
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     roles = models.ManyToManyField(Role, related_name='users', blank=True)
-
-    # Sobrescribimos `groups` y `user_permissions` para evitar conflictos.
-    # La gestión de permisos se hará a través de `Role`.
     groups = None
     user_permissions = None
-
-    def save(self, *args, **kwargs):
-        # Aseguramos que el username sea único globalmente, pero podríamos quererlo
-        # único por tenant. Por simplicidad, lo mantenemos global.
-        # El email también debería ser único.
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.username
 
+# --- Modelos para el Arquitecto de Embudos ---
 
-class Customer(models.Model):
-    """
-    Representa un cliente o lead en el CRM.
-    """
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='customers')
-    email = models.EmailField()
-    first_name = models.CharField(max_length=255, blank=True)
-    last_name = models.CharField(max_length=255, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+class Categoria(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='categorias')
+    nombre = models.CharField(max_length=255)
     def __str__(self):
-        return self.email
+        return self.nombre
 
-
-class Campaign(models.Model):
-    """
-    Una campaña de marketing.
-    """
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='campaigns')
-    name = models.CharField(max_length=255)
-    goal = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+class Subcategoria(models.Model):
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='subcategorias')
+    nombre = models.CharField(max_length=255)
     def __str__(self):
-        return self.name
+        return f"{self.categoria.nombre} > {self.nombre}"
 
-
-class Funnel(models.Model):
-    """
-    Un embudo de marketing dentro de una campaña.
-    """
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='funnels')
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='funnels')
-    name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+class LandingPage(models.Model):
+    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE, related_name='landing_pages')
+    slug = models.SlugField(unique=True)
+    estado = models.CharField(max_length=10, choices=[('borrador', 'Borrador'), ('publicado', 'Publicado')], default='borrador')
     def __str__(self):
-        return self.name
+        return self.slug
 
+class Embudo(models.Model):
+    landing_page = models.OneToOneField(LandingPage, on_delete=models.CASCADE, related_name='embudo')
+    nombre = models.CharField(max_length=255)
+    orden = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    history = HistoricalRecords()
+    def __str__(self):
+        return self.nombre
 
-class FunnelPage(models.Model):
-    """
-    Una página dentro de un embudo (ej. Landing, Oferta, Gracias).
-    """
-    funnel = models.ForeignKey(Funnel, on_delete=models.CASCADE, related_name='pages')
-    title = models.CharField(max_length=255)
-    content_json = models.JSONField(default=dict) # Para almacenar la estructura de la página
-    order = models.PositiveIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
+class Pagina(models.Model):
+    embudo = models.ForeignKey(Embudo, on_delete=models.CASCADE, related_name='paginas')
+    tipo = models.CharField(max_length=50)
+    orden = models.PositiveIntegerField()
+    history = HistoricalRecords()
     class Meta:
-        ordering = ['order']
-
+        ordering = ['orden']
     def __str__(self):
-        return self.title
+        return f"Página tipo {self.tipo} en {self.embudo.nombre}"
 
-
-class Asset(models.Model):
-    """
-    Un activo digital (imagen, video, texto) generado por la IA.
-    """
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='assets')
-    asset_type = models.CharField(max_length=50, choices=[('text', 'Text'), ('image', 'Image'), ('video', 'Video')])
-    content = models.TextField() # URL, base64 o texto
-    created_at = models.DateTimeField(auto_now_add=True)
-
+class Bloque(models.Model):
+    pagina = models.ForeignKey(Pagina, on_delete=models.CASCADE, related_name='bloques')
+    tipo = models.CharField(max_length=50)
+    orden = models.PositiveIntegerField()
+    config_json = models.JSONField()
+    history = HistoricalRecords()
+    class Meta:
+        ordering = ['orden']
     def __str__(self):
-        return f"{self.asset_type} Asset ({self.id})"
+        return f"Bloque tipo {self.tipo} en página {self.pagina.id}"
 
+# --- Modelos para el Módulo de IA y Trazabilidad ---
 
 class AIInteraction(models.Model):
-    """
-    Registra cada interacción con el módulo de IA.
-    """
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='ai_interactions')
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='ai_interactions')
-    provider = models.CharField(max_length=100)
-    prompt = models.TextField()
-    result = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ai_interactions')
+    proveedor_usado = models.CharField(max_length=100)
+    prompt_original = models.TextField()
+    resultado = models.TextField(blank=True)
+    errores = models.TextField(blank=True)
+    costo_estimado = models.DecimalField(max_digits=10, decimal_places=6, default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"Interaction {self.id} by {self.user.username if self.user else 'System'}"
+
+class ContentAsset(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='content_assets')
+    ai_interaction = models.ForeignKey(AIInteraction, on_delete=models.SET_NULL, null=True, blank=True)
+    asset_type = models.CharField(max_length=50, choices=[('text', 'Text'), ('image', 'Image'), ('video', 'Video')])
+    content = models.TextField() # Para texto o URLs
+    # campaign = models.ForeignKey('Campaign', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Interaction by {self.user.username} with {self.provider} at {self.created_at}"
+        return f"{self.asset_type.capitalize()} Asset {self.id}"
+
+class AsyncTask(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='async_tasks')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='async_tasks')
+    task_type = models.CharField(max_length=100) # ej. 'video_generation'
+    status = models.CharField(max_length=20, default='pending', choices=[('pending', 'Pending'), ('processing', 'Processing'), ('completed', 'Completed'), ('failed', 'Failed')])
+    result_url = models.URLField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Task {self.id} ({self.task_type}) - {self.status}"
+ 
