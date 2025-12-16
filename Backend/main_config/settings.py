@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     'ai',
     'infrastructure',
     'shared',
+    'marketing',
+    'sales',
  
 
     # Third-party apps for versioning
