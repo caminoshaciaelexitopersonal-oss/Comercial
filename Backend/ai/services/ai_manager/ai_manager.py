@@ -62,11 +62,15 @@ class AIManager:
                 return provider
         return None
 
-    def execute_text_generation(self, prompt: str, model: str, **kwargs) -> str:
+    def execute_text_generation(self, prompt: str, model: str, **kwargs) -> (str, str):
         provider = self._find_provider_for_capability('text')
         if not provider:
             raise RuntimeError("No provider available for text generation.")
-        return provider.generate_text(prompt=prompt, model=model, **kwargs)
+
+        generated_text = provider.generate_text(prompt=prompt, model=model, **kwargs)
+        provider_name = provider.__class__.__name__
+
+        return generated_text, provider_name
 
     def execute_image_generation(self, prompt: str, model: str, **kwargs) -> Optional[str]:
         provider = self._find_provider_for_capability('image')
