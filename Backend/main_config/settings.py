@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'shared',
     'marketing',
     'sales',
+    'automation',
  
 
     # Third-party apps for versioning
