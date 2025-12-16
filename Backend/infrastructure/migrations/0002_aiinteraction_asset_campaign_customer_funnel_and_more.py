@@ -13,41 +13,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="AIInteraction",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                ("provider", models.CharField(max_length=100)),
-                ("prompt", models.TextField()),
-                ("result", models.TextField()),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                (
-                    "tenant",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="ai_interactions",
-                        to="infrastructure.tenant",
-                    ),
-                ),
-                (
-                    "user",
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="ai_interactions",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-            ],
-        ),
-        migrations.CreateModel(
             name="Asset",
             fields=[
                 (
