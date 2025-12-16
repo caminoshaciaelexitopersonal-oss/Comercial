@@ -3,7 +3,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from infrastructure.models import Tenant
-from .models import Funnel, FunnelVersion, FunnelPublication
+ 
+from .models import Funnel, FunnelVersion, FunnelPublication, FunnelPage
+from shared.models import DomainEvent
+ 
 
 User = get_user_model()
 
@@ -52,3 +55,24 @@ class FunnelsAPITests(APITestCase):
         funnel.refresh_from_db()
         self.assertEqual(funnel.status, 'published')
         self.assertEqual(FunnelPublication.objects.filter(funnel=funnel, is_active=True).count(), 1)
+ 
+
+    def test_lead_capture_dispatches_event(self):
+        funnel = Funnel.objects.create(tenant=self.tenant, name="Event Test Funnel")
+        version = FunnelVersion.objects.create(funnel=funnel, version_number=1)
+        publication = FunnelPublication.objects.create(funnel=funnel, version=version)
+        page = FunnelPage.objects.create(funnel_version=version, order_index=0)
+
+        url = reverse('lead-capture', kwargs={'slug': publication.public_url_slug})
+        data = {"page_id": page.id, "form_data": {"email": "test@example.com"}}
+
+        self.assertEqual(DomainEvent.objects.count(), 0)
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(DomainEvent.objects.count(), 1)
+
+        event = DomainEvent.objects.first()
+        self.assertEqual(event.event_type, 'lead.created')
+        self.assertEqual(event.payload['form_data']['email'], 'test@example.com')
+ 

@@ -7,6 +7,9 @@ from rest_framework.response import Response
 from django.db import transaction
 from rest_framework.views import APIView
 from .models import LeadCapture, FunnelEvent
+ 
+from shared.services import event_dispatcher
+ 
 
 
 class LeadCaptureView(APIView):
@@ -25,12 +28,29 @@ class LeadCaptureView(APIView):
         if not page_id:
             return Response({"error": "El campo 'page_id' es requerido."}, status=400)
 
-        LeadCapture.objects.create(
+ 
+        lead = LeadCapture.objects.create(
+ 
             funnel=publication.funnel,
             version=publication.version,
             page_id=page_id,
             form_data=form_data
         )
+ 
+
+        # Emitir el evento de dominio
+        event_dispatcher.dispatch(
+            'lead.created',
+            {
+                'lead_id': lead.id,
+                'funnel_id': lead.funnel.id,
+                'version_id': lead.version.id,
+                'tenant_id': lead.funnel.tenant_id,
+                'form_data': lead.form_data,
+            }
+        )
+
+ 
         return Response({"status": "Lead capturado exitosamente."}, status=201)
 
 
