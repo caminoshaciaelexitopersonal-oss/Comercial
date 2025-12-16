@@ -57,8 +57,11 @@ INSTALLED_APPS = [
     'ai',
     'infrastructure',
     'shared',
+    'marketing',
+    'sales',
+    'automation',
+    'funnels',
  
-
     # Third-party apps for versioning
     'simple_history',
  
@@ -97,15 +100,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "main_config.wsgi.application"
 
 
- 
+import sys
 import os
 
- 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
- 
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME'),
@@ -113,9 +114,15 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
- 
     }
 }
+
+# Use SQLite for testing to avoid needing a PostgreSQL server
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:'
+    }
 
 
 # Password validation
@@ -159,4 +166,14 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_BEAT_SCHEDULE = {
+    'process-pending-events-every-10-seconds': {
+        'task': 'shared.tasks.process_pending_events',
+        'schedule': 10.0,
+    },
 }
