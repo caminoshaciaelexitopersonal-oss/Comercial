@@ -60,7 +60,9 @@ INSTALLED_APPS = [
     'marketing',
     'sales',
     'automation',
+ 
     'funnels',
+ 
  
     # Third-party apps for versioning
     'simple_history',
