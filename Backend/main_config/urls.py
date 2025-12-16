@@ -9,4 +9,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
  
     path('api/bff/', include('bff.urls')),
+    path('api/ai/', include('ai.urls')),
 ]

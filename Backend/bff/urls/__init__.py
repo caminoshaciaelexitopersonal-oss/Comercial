@@ -2,8 +2,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import builder_views, public_views
-from .views.auth_views import UserRegistrationView # Asumiendo que se ha refactorizado a auth_views
+from ..views import builder_views, public_views
+from ..views.auth_views import UserRegistrationView # Asumiendo que se ha refactorizado a auth_views
 
 # Router para las vistas privadas del constructor (builder)
 builder_router = DefaultRouter()
