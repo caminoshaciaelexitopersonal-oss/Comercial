@@ -75,8 +75,12 @@ const Header: React.FC = () => {
 }
 
 
-const LevelFunnels: React.FC = () => (
-    <FunnelBuilderProvider>
+interface LevelFunnelsProps {
+  authToken: string;
+}
+
+const LevelFunnels: React.FC<LevelFunnelsProps> = ({ authToken }) => (
+    <FunnelBuilderProvider authToken={authToken}>
         <div className="h-full flex flex-col font-sans text-foreground bg-background">
             <Header />
             <FunnelBuilder />

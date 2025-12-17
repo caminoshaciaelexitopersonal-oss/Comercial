@@ -2,13 +2,48 @@ import uuid
 from django.db import models
 from infrastructure.models import Tenant
 
+# Modelos para replicar la estructura jerárquica del frontend
+class CadenaTurismo(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='cadenas')
+    nombre = models.CharField(max_length=255)
+    color_primario = models.CharField(max_length=7)
+    color_secundario = models.CharField(max_length=7)
+
+    def __str__(self):
+        return self.nombre
+
+class Categoria(models.Model):
+    cadena = models.ForeignKey(CadenaTurismo, on_delete=models.CASCADE, related_name='categorias')
+    nombre = models.CharField(max_length=255)
+    icon = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return self.nombre
+
+class Subcategoria(models.Model):
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='subcategorias')
+    nombre = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.nombre
+
+class LandingPage(models.Model):
+    subcategoria = models.ForeignKey(Subcategoria, on_delete=models.CASCADE, related_name='landing_pages')
+    nombre = models.CharField(max_length=255)
+    publicada = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.nombre
+
 class Funnel(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
         ('archived', 'Archived'),
     ]
-    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='funnels')
+    # El Funnel ahora pertenece a una LandingPage, que a su vez tiene la jerarquía
+    landing_page = models.ForeignKey(LandingPage, on_delete=models.CASCADE, related_name='funnels', null=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='funnels') # Mantenemos la relación directa con Tenant por si acaso y para permisos
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)

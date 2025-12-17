@@ -13,7 +13,7 @@ User = get_user_model()
 class FunnelsAPITests(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="Funnel Tenant")
-        self.user = User.objects.create_user(username='funnel_user', password='password', tenant=self.tenant)
+        self.user = User.objects.create_user(email='funnel_user@example.com', password='password', tenant=self.tenant)
         self.client.force_authenticate(user=self.user)
 
     def test_create_funnel_creates_initial_version(self):

@@ -14,8 +14,10 @@ import LevelPlaybooks from './components/LevelPlaybooks';
 import LevelAdminPanel from './components/LevelAdminPanel';
 import { SettingsProvider } from './context/SettingsContext';
 import Settings from './components/Settings';
+import Login from './components/Login';
 
 const App = () => {
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<AppView>(AppView.FUNNELS);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,7 +54,7 @@ const App = () => {
       case AppView.RESPONSES: return <Level2_Responses />;
       case AppView.AI_STUDIO: return <LevelAIStudio />;
       case AppView.AUTOMATION: return <Level5_AutomationSuite />;
-      case AppView.FUNNELS: return <LevelFunnels />;
+      case AppView.FUNNELS: return <LevelFunnels authToken={authToken!} />;
       case AppView.PLAYBOOKS: return <LevelPlaybooks />;
       case AppView.ADMIN: return <Level6_AnalyticsAdmin />;
       case AppView.ADMIN_PANEL: return <LevelAdminPanel />;

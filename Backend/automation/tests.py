@@ -10,7 +10,7 @@ User = get_user_model()
 class AutomationAPITests(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="Automation Tenant")
-        self.user = User.objects.create_user(username='auto_user', password='password', tenant=self.tenant)
+        self.user = User.objects.create_user(email='auto_user@example.com', password='password', tenant=self.tenant)
         self.client.force_authenticate(user=self.user)
         self.url = reverse('workflow-list')
 

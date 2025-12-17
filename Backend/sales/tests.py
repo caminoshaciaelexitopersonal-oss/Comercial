@@ -10,7 +10,7 @@ User = get_user_model()
 class SalesAPITests(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="Sales Tenant")
-        self.user = User.objects.create_user(username='sales_user', password='password', tenant=self.tenant)
+        self.user = User.objects.create_user(email='sales_user@example.com', password='password', tenant=self.tenant)
         self.client.force_authenticate(user=self.user)
 
         self.opportunity = Opportunity.objects.create(tenant=self.tenant, name="Big Deal", stage="New")

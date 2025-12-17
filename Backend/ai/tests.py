@@ -14,7 +14,7 @@ class AITextGenerationTests(APITestCase):
         self.other_tenant = Tenant.objects.create(name="Other Tenant")
 
         self.user = User.objects.create_user(
-            username='testuser',
+            email='testuser@example.com',
             password='testpassword',
             tenant=self.tenant
         )
