@@ -12,7 +12,8 @@ class FunnelsAPITests(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="Funnel Tenant")
         self.user = User.objects.create_user(username='funnel_user', password='password', tenant=self.tenant)
-        role = Role.objects.create(tenant=self.tenant, name="FunnelManager", permissions=["funnels:create", "funnels:view", "funnels:publish"])
+        # Añadimos todos los permisos necesarios para las pruebas de API
+        role = Role.objects.create(tenant=self.tenant, name="FunnelManager", permissions=["funnels:create", "funnels:view", "funnels:publish", "funnels:edit"])
         self.user.roles.add(role)
         self.client.force_authenticate(user=self.user)
 
@@ -103,40 +104,43 @@ class FunnelsAPITests(APITestCase):
         self.assertGreater(versions_served['v2'], 10)
 
 
-# TODO: Reactivar estos tests cuando se resuelva el problema del RBAC en el entorno de pruebas.
-# class FunnelsRBAC_Tests(APITestCase):
-#     def setUp(self):
-#         self.tenant = Tenant.objects.create(name="RBAC Tenant")
-#         self.user = User.objects.create_user(username='rbac_user', password='password', tenant=self.tenant)
-#         self.client.force_authenticate(user=self.user)
+class FunnelsRBAC_Tests(APITestCase):
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="RBAC Tenant")
+        self.user = User.objects.create_user(username='rbac_user', password='password', tenant=self.tenant)
+        self.client.force_authenticate(user=self.user)
 
-#     def test_create_funnel_without_permission_fails(self):
-#         # El usuario no tiene roles ni permisos
-#         url = reverse('funnel-list')
-#         data = {"name": "Funnel Sin Permiso"}
-#         response = self.client.post(url, data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_create_funnel_without_permission_fails(self):
+        # El usuario no tiene roles ni permisos
+        url = reverse('funnel-list')
+        data = {"name": "Funnel Sin Permiso"}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-#     def test_create_funnel_with_permission_succeeds(self):
-#         # Asignamos un rol con el permiso correcto
-#         role = Role.objects.create(tenant=self.tenant, name="Marketer", permissions=["funnels:create"])
-#         self.user.roles.add(role)
-#         self.client.force_authenticate(user=self.user)
+    def test_create_funnel_with_permission_succeeds(self):
+        # Asignamos un rol con el permiso correcto
+        role = Role.objects.create(tenant=self.tenant, name="Marketer", permissions=["funnels:create"])
+        self.user.roles.add(role)
+        self.client.force_authenticate(user=self.user)
 
-#         url = reverse('funnel-list')
-#         data = {"name": "Funnel Con Permiso"}
-#         response = self.client.post(url, data, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        url = reverse('funnel-list')
+        data = {"name": "Funnel Con Permiso"}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-#     def test_publish_funnel_without_permission_fails(self):
-#         # Usuario solo tiene permiso de creación, no de publicación
-#         role = Role.objects.create(tenant=self.tenant, name="Creator", permissions=["funnels:create"])
-#         self.user.roles.add(role)
-#         self.client.force_authenticate(user=self.user)
+    def test_publish_funnel_without_permission_fails(self):
+        # Usuario solo tiene permiso de creación y edición, no de publicación
+        role = Role.objects.create(tenant=self.tenant, name="Creator", permissions=["funnels:create", "funnels:edit"])
+        self.user.roles.add(role)
+        self.client.force_authenticate(user=self.user)
 
-#         funnel = Funnel.objects.create(tenant=self.tenant, name="Test Funnel")
-#         version = FunnelVersion.objects.create(funnel=funnel, version_number=1)
+        # Primero, creamos el funnel (para lo cual tenemos permiso)
+        funnel_data = {"name": "Test Funnel"}
+        self.client.post(reverse('funnel-list'), funnel_data, format='json')
+        funnel = Funnel.objects.get(name="Test Funnel")
+        version = funnel.versions.first()
 
-#         url = reverse('funnel-publish', kwargs={'pk': funnel.pk})
-#         response = self.client.post(url, {"version_id": version.id})
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Ahora intentamos publicar sin permiso
+        url = reverse('funnel-publish', kwargs={'pk': funnel.pk})
+        response = self.client.post(url, {"version_id": version.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

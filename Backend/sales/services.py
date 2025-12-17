@@ -1,4 +1,5 @@
 from .models import Opportunity
+from predictions.services.lead_predictor import LeadPredictorService
 
 class LeadScoringService:
     @staticmethod
@@ -31,5 +32,8 @@ class LeadScoringService:
         opportunity.lead_score = new_score
         opportunity.priority = new_priority
         opportunity.save()
+
+        # Después de actualizar el score, generamos una nueva predicción
+        LeadPredictorService.predict_closeness(opportunity)
 
         # Podríamos emitir un evento 'lead.score.updated' aquí en el futuro

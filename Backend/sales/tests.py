@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from infrastructure.models import Tenant
 from .models import Opportunity, StageHistory
+from predictions.models import LeadClosenessPrediction
 from shared.subscribers import EVENT_SUBSCRIBERS
 from .subscribers import handle_lead_created_event
 
@@ -61,3 +62,9 @@ class LeadScoringTests(APITestCase):
         opportunity = Opportunity.objects.first()
         self.assertEqual(opportunity.lead_score, 50) # Basado en la regla de > 10000
         self.assertEqual(opportunity.priority, 'Medium')
+
+        # Verificar que también se creó la predicción
+        self.assertEqual(LeadClosenessPrediction.objects.count(), 1)
+        prediction = LeadClosenessPrediction.objects.first()
+        self.assertEqual(prediction.opportunity, opportunity)
+        self.assertAlmostEqual(prediction.confidence, 0.5) # 50 / 100.0

@@ -122,7 +122,7 @@ class PublicFunnelView(APIView):
 class FunnelViewSet(viewsets.ModelViewSet):
     queryset = Funnel.objects.all().prefetch_related('versions')
     serializer_class = FunnelSerializer
-    permission_classes = [IsAuthenticated] # TEMPORALMENTE DESHABILITADO: HasPermission
+    permission_classes = [IsAuthenticated, HasPermission]
 
     def get_required_permissions(self, action):
         """Devuelve la lista de permisos requeridos para una acción."""

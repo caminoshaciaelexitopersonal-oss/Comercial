@@ -31,6 +31,15 @@ class User(AbstractUser):
     roles = models.ManyToManyField(Role, related_name='users', blank=True)
     groups = None
     user_permissions = None
+
+    @property
+    def permissions(self):
+        if not hasattr(self, '_permissions'):
+            self._permissions = set()
+            for role in self.roles.all():
+                self._permissions.update(role.permissions)
+        return self._permissions
+
     def __str__(self):
         return self.username
 
@@ -124,4 +133,3 @@ class AsyncTask(models.Model):
 
     def __str__(self):
         return f"Task {self.id} ({self.task_type}) - {self.status}"
- 
