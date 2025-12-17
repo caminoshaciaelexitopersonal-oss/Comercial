@@ -1,5 +1,8 @@
 import uuid
 from django.db import models
+ 
+from django.utils import timezone
+ main
 from infrastructure.models import Tenant
 
 class Funnel(models.Model):
@@ -71,9 +74,29 @@ class FunnelEvent(models.Model):
     ]
     funnel = models.ForeignKey(Funnel, on_delete=models.CASCADE, related_name='events')
     version = models.ForeignKey(FunnelVersion, on_delete=models.CASCADE, related_name='events')
+ 
+    experiment = models.ForeignKey('FunnelExperiment', on_delete=models.SET_NULL, null=True, blank=True)
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
     metadata_json = models.JSONField(default=dict)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"Event '{self.event_type}' on {self.funnel.name}"
+
+
+class FunnelExperiment(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('finished', 'Finished'),
+    ]
+    funnel = models.OneToOneField(Funnel, on_delete=models.CASCADE, related_name='experiment')
+    version_a = models.ForeignKey(FunnelVersion, on_delete=models.CASCADE, related_name='experiments_as_a')
+    version_b = models.ForeignKey(FunnelVersion, on_delete=models.CASCADE, related_name='experiments_as_b')
+    traffic_split = models.PositiveIntegerField(default=50) # Porcentaje para la versión A
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"A/B Test for {self.funnel.name}"
+ 

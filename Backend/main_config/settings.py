@@ -62,6 +62,9 @@ INSTALLED_APPS = [
     'automation',
  
     'funnels',
+    'billing',
+    'business_intelligence',
+    'predictions',
  
  
     # Third-party apps for versioning
@@ -78,6 +81,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "shared.middleware.RBACMiddleware", # <-- RBAC Middleware
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -173,9 +177,19 @@ REST_FRAMEWORK = {
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+ 
+from celery.schedules import crontab
+
+ 
 CELERY_BEAT_SCHEDULE = {
     'process-pending-events-every-10-seconds': {
         'task': 'shared.tasks.process_pending_events',
         'schedule': 10.0,
     },
+ 
+    'generate-business-insights-daily': {
+        'task': 'business_intelligence.tasks.generate_business_insights',
+        'schedule': crontab(hour=1, minute=0), # Ejecutar cada día a la 1 AM
+    },
+ 
 }

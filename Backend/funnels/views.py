@@ -1,13 +1,17 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+ 
+from shared.permissions import HasPermission
+ 
 from .models import Funnel, FunnelVersion, FunnelPage, FunnelPublication
 from .serializers import FunnelSerializer, FunnelVersionSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+ 
+import random
 from django.db import transaction
 from rest_framework.views import APIView
 from .models import LeadCapture, FunnelEvent
- 
 from shared.services import event_dispatcher
  
 
@@ -63,6 +67,9 @@ class FunnelEventView(APIView):
         version_id = request.data.get('version_id')
         event_type = request.data.get('event_type')
         metadata = request.data.get('metadata', {})
+ 
+        experiment_id = request.data.get('experiment_id')
+ 
 
         if not all([funnel_id, version_id, event_type]):
             return Response({"error": "Los campos 'funnel_id', 'version_id', y 'event_type' son requeridos."}, status=400)
@@ -71,7 +78,10 @@ class FunnelEventView(APIView):
             funnel_id=funnel_id,
             version_id=version_id,
             event_type=event_type,
-            metadata_json=metadata
+ 
+            metadata_json=metadata,
+            experiment_id=experiment_id
+ 
         )
         return Response(status=202)
 
@@ -82,9 +92,43 @@ class PublicFunnelView(APIView):
 
     def get(self, request, slug, *args, **kwargs):
         try:
-            publication = FunnelPublication.objects.select_related('version').get(public_url_slug=slug, is_active=True)
-            serializer = FunnelVersionSerializer(publication.version)
-            return Response(serializer.data)
+ 
+            publication = FunnelPublication.objects.select_related(
+                'version', 'funnel__experiment__version_a', 'funnel__experiment__version_b'
+            ).get(public_url_slug=slug, is_active=True)
+
+            funnel = publication.funnel
+            experiment = hasattr(funnel, 'experiment') and funnel.experiment.status == 'active'
+
+            version_to_serve = publication.version
+            experiment_id = None
+
+            if experiment:
+                # Lógica de A/B Testing
+                session_key = f'funnel_experiment_{funnel.id}_version'
+                assigned_version_id = request.session.get(session_key)
+
+                experiment_id = funnel.experiment.id
+
+                if assigned_version_id:
+                    if assigned_version_id == funnel.experiment.version_a_id:
+                        version_to_serve = funnel.experiment.version_a
+                    else:
+                        version_to_serve = funnel.experiment.version_b
+                else:
+                    if random.randint(1, 100) <= funnel.experiment.traffic_split:
+                        version_to_serve = funnel.experiment.version_a
+                    else:
+                        version_to_serve = funnel.experiment.version_b
+                    request.session[session_key] = version_to_serve.id
+
+            serializer = FunnelVersionSerializer(version_to_serve)
+            response_data = serializer.data
+            response_data['experiment_id'] = experiment_id
+
+            return Response(response_data)
+
+ 
         except FunnelPublication.DoesNotExist:
             return Response({"error": "Funnel no encontrado o no está publicado."}, status=404)
 
@@ -92,7 +136,19 @@ class PublicFunnelView(APIView):
 class FunnelViewSet(viewsets.ModelViewSet):
     queryset = Funnel.objects.all().prefetch_related('versions')
     serializer_class = FunnelSerializer
-    permission_classes = [IsAuthenticated]
+ 
+    permission_classes = [IsAuthenticated, HasPermission]
+
+    def get_required_permissions(self, action):
+        """Devuelve la lista de permisos requeridos para una acción."""
+        if action in ['create', 'versions']:
+            return ['funnels:create']
+        if action == 'publish':
+            return ['funnels:publish']
+        if action in ['update', 'partial_update', 'destroy']:
+            return ['funnels:edit']
+        return ['funnels:view']
+ 
 
     def get_queryset(self):
         return self.queryset.filter(tenant=self.request.user.tenant)

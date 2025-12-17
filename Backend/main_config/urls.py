@@ -14,5 +14,4 @@ urlpatterns = [
     path('api/sales/', include('sales.urls')),
     path('api/automation/', include('automation.urls')),
     path('api/funnels/', include('funnels.urls')),
- 
 ]
