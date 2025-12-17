@@ -1,15 +1,19 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+ 
 from shared.permissions import HasPermission
+ 
 from .models import Funnel, FunnelVersion, FunnelPage, FunnelPublication
 from .serializers import FunnelSerializer, FunnelVersionSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+ 
 import random
 from django.db import transaction
 from rest_framework.views import APIView
 from .models import LeadCapture, FunnelEvent
 from shared.services import event_dispatcher
+ 
 
 
 class LeadCaptureView(APIView):
@@ -28,12 +32,15 @@ class LeadCaptureView(APIView):
         if not page_id:
             return Response({"error": "El campo 'page_id' es requerido."}, status=400)
 
+ 
         lead = LeadCapture.objects.create(
+ 
             funnel=publication.funnel,
             version=publication.version,
             page_id=page_id,
             form_data=form_data
         )
+ 
 
         # Emitir el evento de dominio
         event_dispatcher.dispatch(
@@ -47,6 +54,7 @@ class LeadCaptureView(APIView):
             }
         )
 
+ 
         return Response({"status": "Lead capturado exitosamente."}, status=201)
 
 
@@ -59,7 +67,9 @@ class FunnelEventView(APIView):
         version_id = request.data.get('version_id')
         event_type = request.data.get('event_type')
         metadata = request.data.get('metadata', {})
+ 
         experiment_id = request.data.get('experiment_id')
+ 
 
         if not all([funnel_id, version_id, event_type]):
             return Response({"error": "Los campos 'funnel_id', 'version_id', y 'event_type' son requeridos."}, status=400)
@@ -68,8 +78,10 @@ class FunnelEventView(APIView):
             funnel_id=funnel_id,
             version_id=version_id,
             event_type=event_type,
+ 
             metadata_json=metadata,
             experiment_id=experiment_id
+ 
         )
         return Response(status=202)
 
@@ -80,6 +92,7 @@ class PublicFunnelView(APIView):
 
     def get(self, request, slug, *args, **kwargs):
         try:
+ 
             publication = FunnelPublication.objects.select_related(
                 'version', 'funnel__experiment__version_a', 'funnel__experiment__version_b'
             ).get(public_url_slug=slug, is_active=True)
@@ -115,6 +128,7 @@ class PublicFunnelView(APIView):
 
             return Response(response_data)
 
+ 
         except FunnelPublication.DoesNotExist:
             return Response({"error": "Funnel no encontrado o no está publicado."}, status=404)
 
@@ -122,6 +136,7 @@ class PublicFunnelView(APIView):
 class FunnelViewSet(viewsets.ModelViewSet):
     queryset = Funnel.objects.all().prefetch_related('versions')
     serializer_class = FunnelSerializer
+ 
     permission_classes = [IsAuthenticated, HasPermission]
 
     def get_required_permissions(self, action):
@@ -133,6 +148,7 @@ class FunnelViewSet(viewsets.ModelViewSet):
         if action in ['update', 'partial_update', 'destroy']:
             return ['funnels:edit']
         return ['funnels:view']
+ 
 
     def get_queryset(self):
         return self.queryset.filter(tenant=self.request.user.tenant)

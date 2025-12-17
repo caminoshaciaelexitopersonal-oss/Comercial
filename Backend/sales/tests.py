@@ -4,9 +4,11 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from infrastructure.models import Tenant
 from .models import Opportunity, StageHistory
+ 
 from predictions.models import LeadClosenessPrediction
 from shared.subscribers import EVENT_SUBSCRIBERS
 from .subscribers import handle_lead_created_event
+ 
 
 User = get_user_model()
 
@@ -33,6 +35,7 @@ class SalesAPITests(APITestCase):
         self.assertEqual(history_entry.from_stage, "New")
         self.assertEqual(history_entry.to_stage, "Proposal")
         self.assertEqual(history_entry.user, self.user)
+ 
 
 
 class LeadScoringTests(APITestCase):
@@ -68,3 +71,4 @@ class LeadScoringTests(APITestCase):
         prediction = LeadClosenessPrediction.objects.first()
         self.assertEqual(prediction.opportunity, opportunity)
         self.assertAlmostEqual(prediction.confidence, 0.5) # 50 / 100.0
+ 

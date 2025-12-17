@@ -2,9 +2,11 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+ 
 from infrastructure.models import Tenant, Role
 from .models import Funnel, FunnelVersion, FunnelPublication, FunnelPage, FunnelExperiment
 from shared.models import DomainEvent
+ 
 
 User = get_user_model()
 
@@ -12,9 +14,11 @@ class FunnelsAPITests(APITestCase):
     def setUp(self):
         self.tenant = Tenant.objects.create(name="Funnel Tenant")
         self.user = User.objects.create_user(username='funnel_user', password='password', tenant=self.tenant)
+ 
         # Añadimos todos los permisos necesarios para las pruebas de API
         role = Role.objects.create(tenant=self.tenant, name="FunnelManager", permissions=["funnels:create", "funnels:view", "funnels:publish", "funnels:edit"])
         self.user.roles.add(role)
+ 
         self.client.force_authenticate(user=self.user)
 
     def test_create_funnel_creates_initial_version(self):
@@ -56,6 +60,7 @@ class FunnelsAPITests(APITestCase):
         funnel.refresh_from_db()
         self.assertEqual(funnel.status, 'published')
         self.assertEqual(FunnelPublication.objects.filter(funnel=funnel, is_active=True).count(), 1)
+ 
 
     def test_lead_capture_dispatches_event(self):
         funnel = Funnel.objects.create(tenant=self.tenant, name="Event Test Funnel")
@@ -75,6 +80,7 @@ class FunnelsAPITests(APITestCase):
         event = DomainEvent.objects.first()
         self.assertEqual(event.event_type, 'lead.created')
         self.assertEqual(event.payload['form_data']['email'], 'test@example.com')
+ 
 
     def test_ab_test_routing(self):
         funnel = Funnel.objects.create(tenant=self.tenant, name="A/B Test Funnel")
@@ -144,3 +150,4 @@ class FunnelsRBAC_Tests(APITestCase):
         url = reverse('funnel-publish', kwargs={'pk': funnel.pk})
         response = self.client.post(url, {"version_id": version.id})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+ 

@@ -1,6 +1,8 @@
 import uuid
 from django.db import models
+ 
 from django.utils import timezone
+ main
 from infrastructure.models import Tenant
 
 class Funnel(models.Model):
@@ -72,6 +74,7 @@ class FunnelEvent(models.Model):
     ]
     funnel = models.ForeignKey(Funnel, on_delete=models.CASCADE, related_name='events')
     version = models.ForeignKey(FunnelVersion, on_delete=models.CASCADE, related_name='events')
+ 
     experiment = models.ForeignKey('FunnelExperiment', on_delete=models.SET_NULL, null=True, blank=True)
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
     metadata_json = models.JSONField(default=dict)
@@ -96,3 +99,4 @@ class FunnelExperiment(models.Model):
 
     def __str__(self):
         return f"A/B Test for {self.funnel.name}"
+ 
