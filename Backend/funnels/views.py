@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from shared.permissions import HasPermission
 from .models import Funnel, FunnelVersion, FunnelPage, FunnelPublication
 from .serializers import FunnelSerializer, FunnelVersionSerializer
 from rest_framework.decorators import action
@@ -121,7 +122,17 @@ class PublicFunnelView(APIView):
 class FunnelViewSet(viewsets.ModelViewSet):
     queryset = Funnel.objects.all().prefetch_related('versions')
     serializer_class = FunnelSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated] # TEMPORALMENTE DESHABILITADO: HasPermission
+
+    def get_required_permissions(self, action):
+        """Devuelve la lista de permisos requeridos para una acción."""
+        if action in ['create', 'versions']:
+            return ['funnels:create']
+        if action == 'publish':
+            return ['funnels:publish']
+        if action in ['update', 'partial_update', 'destroy']:
+            return ['funnels:edit']
+        return ['funnels:view']
 
     def get_queryset(self):
         return self.queryset.filter(tenant=self.request.user.tenant)

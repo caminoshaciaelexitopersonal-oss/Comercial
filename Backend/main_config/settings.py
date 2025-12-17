@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'sales',
     'automation',
     'funnels',
+    'billing',
  
     # Third-party apps for versioning
     'simple_history',
@@ -76,6 +77,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "shared.middleware.RBACMiddleware", # <-- RBAC Middleware
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

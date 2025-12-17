@@ -20,6 +20,7 @@ class Tenant(models.Model):
 class Role(models.Model):
     name = models.CharField(max_length=100)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='roles')
+    permissions = models.JSONField(default=list)  # Ej: ["funnels:create", "billing:view"]
  
     def __str__(self):
         return f"{self.name} ({self.tenant.name})"
