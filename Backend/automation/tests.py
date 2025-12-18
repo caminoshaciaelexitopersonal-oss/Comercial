@@ -24,6 +24,7 @@ class AutomationAPITests(APITestCase):
                 {"id": "temp-1", "node_type": "trigger", "config_json": {"type": "lead.created"}},
                 {"id": "temp-2", "node_type": "action", "config_json": {"type": "send_email"}}
             ],
+            # CORREGIDO: Enviar los IDs temporales en el formato correcto
             "edges": [
                 {"source_node": "temp-1", "target_node": "temp-2"}
             ]

@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from .models import Opportunity, StageHistory
+from .models import Opportunity
 from .serializers import OpportunitySerializer
 
 class OpportunityViewSet(viewsets.ModelViewSet):
@@ -14,7 +14,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         return Opportunity.objects.filter(tenant=self.request.user.tenant)
 
     def perform_create(self, serializer):
-        serializer.save(tenant=self.request.user.tenant, owner=self.request.user)
+        serializer.save(tenant=self.request.user.tenant, assigned_to=self.request.user)
 
     @action(detail=True, methods=['put'], url_path='move')
     def move_opportunity(self, request, pk=None):
@@ -24,17 +24,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
         if not new_stage:
             return Response({"error": "El campo 'stage' es requerido."}, status=status.HTTP_400_BAD_REQUEST)
 
-        from_stage = opportunity.stage
-
-        # Registrar el movimiento en el historial
-        StageHistory.objects.create(
-            opportunity=opportunity,
-            from_stage=from_stage,
-            to_stage=new_stage,
-            user=request.user
-        )
-
-        # Actualizar la oportunidad
+        # Simplemente actualizamos la oportunidad
         opportunity.stage = new_stage
         opportunity.save()
 

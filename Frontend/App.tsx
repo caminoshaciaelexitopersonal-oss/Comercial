@@ -50,10 +50,10 @@ const App = () => {
 
   const renderContent = () => {
     switch (activeView) {
-      case AppView.COMMUNICATION: return <Level1_Communication />;
+      case AppView.COMMUNICATION: return <Level1_Communication authToken={authToken!} />;
       case AppView.RESPONSES: return <Level2_Responses />;
       case AppView.AI_STUDIO: return <LevelAIStudio />;
-      case AppView.AUTOMATION: return <Level5_AutomationSuite />;
+      case AppView.AUTOMATION: return <Level5_AutomationSuite authToken={authToken!} />;
       case AppView.FUNNELS: return <LevelFunnels authToken={authToken!} />;
       case AppView.PLAYBOOKS: return <LevelPlaybooks />;
       case AppView.ADMIN: return <Level6_AnalyticsAdmin />;

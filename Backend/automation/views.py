@@ -1,12 +1,20 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from .models import Workflow
-from .serializers import WorkflowDetailSerializer, WorkflowCreateSerializer
+from .models import Workflow, AgentPersona
+from .serializers import WorkflowDetailSerializer, WorkflowCreateSerializer, AgentPersonaSerializer
+
+class AgentPersonaViewSet(viewsets.ModelViewSet):
+    queryset = AgentPersona.objects.all()
+    serializer_class = AgentPersonaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(tenant=self.request.user.tenant)
+
+    def perform_create(self, serializer):
+        serializer.save(tenant=self.request.user.tenant)
 
 class WorkflowViewSet(viewsets.ModelViewSet):
-    """
-    API para gestionar Workflows de Automatización.
-    """
     queryset = Workflow.objects.all()
     permission_classes = [IsAuthenticated]
 
@@ -16,9 +24,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return WorkflowDetailSerializer
 
     def get_queryset(self):
-        # Filtrar por tenant del usuario autenticado
         return Workflow.objects.filter(tenant=self.request.user.tenant)
 
     def perform_create(self, serializer):
-        # Asignar el tenant al crear
         serializer.save(tenant=self.request.user.tenant)

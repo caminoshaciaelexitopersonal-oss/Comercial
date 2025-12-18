@@ -1,12 +1,7 @@
 from rest_framework import serializers
-from .models import Opportunity, StageHistory
+from .models import Opportunity
 
 class OpportunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Opportunity
-        fields = ['id', 'name', 'stage', 'value', 'created_at', 'updated_at', 'owner']
-
-class StageHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StageHistory
-        fields = '__all__'
+        fields = ['id', 'name', 'stage', 'value', 'priority', 'last_activity_at', 'created_at', 'assigned_to']
