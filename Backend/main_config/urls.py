@@ -14,5 +14,7 @@ urlpatterns = [
     path('api/sales/', include('sales.urls')),
     path('api/automation/', include('automation.urls')),
     path('api/funnels/', include('funnels.urls')),
- 
+
+    # Endpoints para el Funnel Runtime Engine (FASE 5)
+    path('api/runtime/', include('funnels.runtime_urls')),
 ]

@@ -19,33 +19,17 @@ class FunnelBuilderDataView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class FunnelCreateView(APIView):
-    """
-    Endpoint para crear un nuevo Funnel asociado a una LandingPage.
-    """
     permission_classes = [IsAuthenticated]
-
     @transaction.atomic
     def post(self, request, lp_id, *args, **kwargs):
         tenant = request.user.tenant
         funnel_name = request.data.get('name')
         funnel_schema = request.data.get('schema')
-
-        if not all([funnel_name, funnel_schema]):
-            return Response({"error": "'name' and 'schema' are required."}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             landing_page = get_object_or_404(LandingPage, id=lp_id, subcategoria__categoria__cadena__tenant=tenant)
-
-            new_funnel = Funnel.objects.create(
-                tenant=tenant,
-                landing_page=landing_page,
-                name=funnel_name
-            )
+            new_funnel = Funnel.objects.create(tenant=tenant, landing_page=landing_page, name=funnel_name)
             create_new_funnel_version(funnel=new_funnel, schema_json=funnel_schema)
-
-            # Devolvemos el objeto del funnel recién creado en el formato que el frontend espera
             serializer = FunnelContentSerializer(new_funnel)
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except LandingPage.DoesNotExist:
             return Response({"error": "LandingPage not found."}, status=status.HTTP_404_NOT_FOUND)
