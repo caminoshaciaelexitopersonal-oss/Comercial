@@ -1,6 +1,8 @@
 
-import React, { useState } from 'react';
-import { Customer, PipelineStage, Seller, Task, Segment, Ticket, KnowledgeBaseArticle, TicketStatus, TicketMessage, Integration, IntegrationCategory, Quote } from '../types';
+import React, { useState, useEffect } from 'react';
+// import { Customer, Seller, Task, Segment, Ticket, KnowledgeBaseArticle, TicketStatus, TicketMessage, Integration, IntegrationCategory, Quote } from '../types';
+import { Opportunity, PipelineStage, Seller } from '../types/sales';
+import { getOpportunities, moveOpportunity } from '../services/sales';
 import {
     TrendingUpIcon, EuroIcon, CheckCircleIcon, UsersIcon, ClipboardListIcon,
     PipelineIcon, DashboardIcon, PlusIcon, SearchIcon, PhoneIcon, MailIcon, 
@@ -21,55 +23,14 @@ const sellers: Seller[] = [
     { id: 'support-1', name: 'Laura Pausini', avatarUrl: 'https://randomuser.me/api/portraits/women/69.jpg' },
 ];
 
-const initialTickets: Ticket[] = [
-    { id: 'TKT-001', subject: 'Problema con la facturación', customerId: 1, status: 'in-progress', priority: 'high', category: 'Facturación', assigneeId: 'support-1', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), slaExpiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), conversation: [{id:'tm-1', author: 'Elena Rodriguez', text: 'No veo la última factura en mi portal.', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), type: 'reply'}]},
-    { id: 'TKT-002', subject: 'Consulta sobre integración API', customerId: 4, status: 'new', priority: 'medium', category: 'Técnico', createdAt: new Date().toISOString(), slaExpiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), conversation: []},
-    { id: 'TKT-003', subject: 'El producto llegó dañado', customerId: 2, status: 'resolved', priority: 'urgent', category: 'Reclamo', assigneeId: 'support-1', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), slaExpiresAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), conversation: [], satisfactionRating: 4},
-];
+// const initialTickets: Ticket[] = [
+//     { id: 'TKT-001', subject: 'Problema con la facturación', customerId: 1, status: 'in-progress', priority: 'high', category: 'Facturación', assigneeId: 'support-1', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), slaExpiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), conversation: [{id:'tm-1', author: 'Elena Rodriguez', text: 'No veo la última factura en mi portal.', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), type: 'reply'}]},
+//     { id: 'TKT-002', subject: 'Consulta sobre integración API', customerId: 4, status: 'new', priority: 'medium', category: 'Técnico', createdAt: new Date().toISOString(), slaExpiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), conversation: []},
+//     { id: 'TKT-003', subject: 'El producto llegó dañado', customerId: 2, status: 'resolved', priority: 'urgent', category: 'Reclamo', assigneeId: 'support-1', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), slaExpiresAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), conversation: [], satisfactionRating: 4},
+// ];
 
-const initialCustomers: Customer[] = [
-    {
-        id: 1, name: 'Elena Rodriguez', company: 'Innovatech Solutions', avatarUrl: 'https://randomuser.me/api/portraits/women/71.jpg',
-        socials: { linkedin: '#', x: '#', facebook: '#' }, priority: 'high', tags: ['lead_caliente', 'demo_solicitada'],
-        pipelineStage: 'proposal', opportunityValue: 15000, assignedTo: 'seller-1', lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        interactions: [
-            { id: 'int-1', type: 'meeting', date: '2024-05-20T10:00:00Z', notes: 'Reunión de demo exitosa. Interesados en el paquete premium.' },
-            { id: 'int-2', type: 'email', date: '2024-05-21T15:30:00Z', notes: 'Enviada propuesta y cotización #Q-24-001.' }
-        ],
-        contacts: [{ id: 'con-1', name: 'Elena Rodriguez', role: 'CTO', email: 'elena.r@innovatech.com', phone: '+1-202-555-0149' }],
-        quotes: [{ id: 'q-1', number: 'Q-24-001', date: '2024-05-21', amount: 15000, status: 'accepted', paid: true }],
-        tasks: [{ id: 'task-1', title: 'Seguimiento de propuesta', dueDate: '2024-05-28', completed: false }],
-        tickets: [initialTickets[0]]
-    },
-    {
-        id: 2, name: 'Marco Vega', company: 'Quantum Dynamics', avatarUrl: 'https://randomuser.me/api/portraits/men/75.jpg',
-        socials: { linkedin: '#' }, priority: 'medium', tags: ['networking', 'B2B'],
-        pipelineStage: 'contacted', opportunityValue: 8000, assignedTo: 'seller-2', lastUpdated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        interactions: [{ id: 'int-3', type: 'call', date: '2024-05-18T14:00:00Z', notes: 'Primera llamada de contacto. Mostró interés inicial.' }],
-        contacts: [], quotes: [], tasks: [{ id: 'task-2', title: 'Agendar llamada de descubrimiento', dueDate: '2024-05-25', completed: true }],
-        tickets: [initialTickets[2]]
-    },
-    {
-        id: 4, name: 'Javier Morales', company: 'HealthPlus Labs', avatarUrl: 'https://randomuser.me/api/portraits/men/80.jpg',
-        socials: { linkedin: '#' }, priority: 'high', tags: ['referido'],
-        pipelineStage: 'negotiation', opportunityValue: 25000, assignedTo: 'seller-2', lastUpdated: new Date().toISOString(),
-        interactions: [{ id: 'int-4', type: 'meeting', date: '2024-05-22T11:00:00Z', notes: 'Negociando términos del contrato. Piden un descuento del 10%.' }],
-        contacts: [], quotes: [{id: 'q-2', number: 'Q-24-002', date: '2024-05-23', amount: 22500, status: 'sent'}], tasks: [{ id: 'task-3', title: 'Preparar contraoferta', dueDate: '2024-05-24', completed: false }],
-        tickets: [initialTickets[1]]
-    },
-    {
-        id: 3, name: 'Sofia Castillo', company: 'NextGen Logistics', avatarUrl: 'https://randomuser.me/api/portraits/women/76.jpg',
-        socials: { linkedin: '#' }, priority: 'low', tags: ['lead_frio'],
-        pipelineStage: 'new', opportunityValue: 5000, assignedTo: 'seller-1', lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        interactions: [], contacts: [], quotes: [], tasks: [], tickets: []
-    },
-    {
-        id: 5, name: 'Lucia Fernandez', company: 'EcoWear Apparel', avatarUrl: 'https://randomuser.me/api/portraits/women/81.jpg',
-        socials: { linkedin: '#' }, priority: 'medium', tags: ['sostenibilidad'],
-        pipelineStage: 'won', opportunityValue: 12000, assignedTo: 'seller-1', lastUpdated: new Date().toISOString(),
-        interactions: [], contacts: [], quotes: [], tasks: [], tickets: []
-    }
-];
+// NOTE: This is now replaced by a fetch call to the backend.
+// const initialCustomers: Customer[] = [];
 
 const mockSegments: Segment[] = [
     { id: 'seg-1', name: 'Leads Calientes (Demo Solicitada)', contactCount: 1, criteria: 'Tags include "demo_solicitada"' },
@@ -149,15 +110,27 @@ const Dashboard: React.FC<{ customers: Customer[], tickets: Ticket[] }> = ({ cus
     );
 };
 
-const PipelineView: React.FC<{ customers: Customer[]; setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>; onSelectCustomer: (customer: Customer) => void; }> = ({ customers, setCustomers, onSelectCustomer }) => {
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, customerId: number) => {
-        e.dataTransfer.setData('customerId', customerId.toString());
+const PipelineView: React.FC<{ opportunities: Opportunity[]; setOpportunities: React.Dispatch<React.SetStateAction<Opportunity[]>>; onSelectOpportunity: (opportunity: Opportunity) => void; }> = ({ opportunities, setOpportunities, onSelectOpportunity }) => {
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, opportunityId: number) => {
+        e.dataTransfer.setData('opportunityId', opportunityId.toString());
     };
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, stageId: PipelineStage) => {
+    const handleDrop = async (e: React.DragEvent<HTMLDivElement>, stageId: PipelineStage) => {
         e.preventDefault();
-        const customerId = parseInt(e.dataTransfer.getData('customerId'), 10);
-        setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, pipelineStage: stageId, lastUpdated: new Date().toISOString() } : c));
+        const opportunityId = parseInt(e.dataTransfer.getData('opportunityId'), 10);
         e.currentTarget.classList.remove('bg-accent');
+
+        // Optimistic UI update
+        const originalOpportunities = opportunities;
+        setOpportunities(prev => prev.map(o => o.id === opportunityId ? { ...o, stage: stageId, last_updated: new Date().toISOString() } : o));
+
+        try {
+            await moveOpportunity(opportunityId, stageId);
+            // On success, the state is already updated. We could refetch or trust the optimistic update.
+        } catch (error) {
+            console.error("Failed to move opportunity:", error);
+            // If the API call fails, revert the change
+            setOpportunities(originalOpportunities);
+        }
     };
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -170,21 +143,21 @@ const PipelineView: React.FC<{ customers: Customer[]; setCustomers: React.Dispat
         <div className="flex-1 p-8 overflow-x-auto">
             <div className="flex space-x-6 min-w-max h-full">
                 {pipelineStages.map(stage => {
-                    const customersInStage = customers.filter(c => c.pipelineStage === stage.id);
-                    const stageValue = customersInStage.reduce((sum, c) => sum + c.opportunityValue, 0);
+                    const opportunitiesInStage = opportunities.filter(o => o.stage === stage.id);
+                    const stageValue = opportunitiesInStage.reduce((sum, o) => sum + o.value, 0);
                     return (
                         <div key={stage.id} className="w-80 bg-secondary rounded-xl flex flex-col h-full" onDrop={(e) => handleDrop(e, stage.id)} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
                             <div className={`p-4 border-b`}>
                                 <h4 className="font-bold text-foreground flex justify-between items-center">
                                     <span>{stage.title}</span>
-                                    <span className="text-sm font-normal text-muted-foreground">{customersInStage.length}</span>
+                                    <span className="text-sm font-normal text-muted-foreground">{opportunitiesInStage.length}</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">€{stageValue.toLocaleString()}</p>
                             </div>
                             <div className="p-2 space-y-2 overflow-y-auto flex-1">
-                                {customersInStage.map(customer => (
-                                    <div key={customer.id} draggable onDragStart={(e) => handleDragStart(e, customer.id)}>
-                                        <CustomerCard customer={customer} onSelect={() => onSelectCustomer(customer)} />
+                                {opportunitiesInStage.map(opportunity => (
+                                    <div key={opportunity.id} draggable onDragStart={(e) => handleDragStart(e, opportunity.id)}>
+                                        <OpportunityCard opportunity={opportunity} onSelect={() => onSelectOpportunity(opportunity)} />
                                     </div>
                                 ))}
                             </div>
@@ -195,30 +168,27 @@ const PipelineView: React.FC<{ customers: Customer[]; setCustomers: React.Dispat
         </div>
     );
 };
-const CustomerCard: React.FC<{ customer: Customer; onSelect: () => void }> = ({ customer, onSelect }) => {
-    const seller = sellers.find(s => s.id === customer.assignedTo);
-    const daysSinceUpdate = Math.floor((new Date().getTime() - new Date(customer.lastUpdated).getTime()) / (1000 * 60 * 60 * 24));
+const OpportunityCard: React.FC<{ opportunity: Opportunity; onSelect: () => void }> = ({ opportunity, onSelect }) => {
+    // const seller = sellers.find(s => s.id === opportunity.assignedTo); // Backend doesn't support this yet
+    const daysSinceUpdate = Math.floor((new Date().getTime() - new Date(opportunity.last_updated).getTime()) / (1000 * 60 * 60 * 24));
     const isInactive = daysSinceUpdate > 7;
-    const priorityColors = { high: 'bg-red-500', medium: 'bg-yellow-500', low: 'bg-blue-500' };
     return (
-        <div className="bg-card p-3 rounded-lg shadow-md cursor-pointer border border-transparent hover:border-primary hover:shadow-xl transition-all group" onClick={onSelect} > 
-            <div className="flex justify-between items-start"> 
-                <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">{customer.name}</p> 
-                <span className={`w-3 h-3 rounded-full ${priorityColors[customer.priority]}`} title={`Prioridad: ${customer.priority}`}></span>
-            </div> 
-            <p className="text-xs text-muted-foreground truncate">{customer.company}</p> 
-            <div className="flex justify-between items-end mt-3"> 
+        <div className="bg-card p-3 rounded-lg shadow-md cursor-pointer border border-transparent hover:border-primary hover:shadow-xl transition-all group" onClick={onSelect} >
+            <div className="flex justify-between items-start">
+                <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">{opportunity.name}</p>
+                 {/* Priority indicator removed as it's not in the backend model */}
+            </div>
+            <p className="text-xs text-muted-foreground truncate">{opportunity.company_name}</p>
+            <div className="flex justify-between items-end mt-3">
                 <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground">€{customer.opportunityValue.toLocaleString()}</span> 
+                    <span className="text-sm font-semibold text-foreground">€{opportunity.value.toLocaleString()}</span>
                     <div className="flex items-center space-x-1 mt-1">
-                        {isInactive && <AlertTriangleIcon className="w-4 h-4 text-yellow-400" title={`Inactivo por ${daysSinceUpdate} días`} />} 
-                        {customer.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">{tag}</span>
-                        ))}
+                        {isInactive && <AlertTriangleIcon className="w-4 h-4 text-yellow-400" title={`Inactivo por ${daysSinceUpdate} días`} />}
+                        {/* Tags removed as they are not in the backend model */}
                     </div>
                 </div>
-                {seller && <img src={seller.avatarUrl} alt={seller.name} className="w-7 h-7 rounded-full border-2 border-card" />} 
-            </div> 
+                {/* Seller avatar removed */}
+            </div>
         </div>
     );
 };
@@ -535,11 +505,25 @@ const TicketDetailPanel: React.FC<{ ticket: Ticket | null, customers: Customer[]
 // --- MAIN COMPONENT ---
 const Level2_Responses: React.FC = () => {
     type MainView = 'dashboard' | 'pipeline' | 'contacts' | 'support' | 'integrations';
-    const [view, setView] = useState<MainView>('dashboard');
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-    const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
-    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [view, setView] = useState<MainView>('pipeline');
+    const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+    // const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+    const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+    // const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+    useEffect(() => {
+        const fetchOpportunities = async () => {
+            try {
+                const data = await getOpportunities();
+                setOpportunities(data);
+            } catch (error) {
+                console.error("Failed to fetch opportunities:", error);
+                // Optionally, set an error state to show a message to the user
+            }
+        };
+
+        fetchOpportunities();
+    }, []);
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
@@ -549,30 +533,31 @@ const Level2_Responses: React.FC = () => {
         { id: 'integrations', label: 'Integraciones', icon: TargetIcon },
     ];
     
-    const handleSelectTicket = (ticket: Ticket) => {
-        setSelectedCustomer(null);
-        setSelectedTicket(ticket);
-    };
+    // const handleSelectTicket = (ticket: Ticket) => {
+    //     setSelectedCustomer(null);
+    //     setSelectedTicket(ticket);
+    // };
 
-    const handleUpdateTicket = (id: string, newTicket: Partial<Ticket>) => {
-        setTickets(prev => prev.map(t => t.id === id ? { ...t, ...newTicket } : t));
-    };
+    // const handleUpdateTicket = (id: string, newTicket: Partial<Ticket>) => {
+    //     setTickets(prev => prev.map(t => t.id === id ? { ...t, ...newTicket } : t));
+    // };
 
-    const handleUpdateQuote = (customerId: number, quoteId: string, newQuote: Partial<Quote>) => {
-        setCustomers(prev => prev.map(c => 
-            c.id === customerId 
-            ? { ...c, quotes: c.quotes.map(q => q.id === quoteId ? {...q, ...newQuote} : q) } 
-            : c
-        ));
-    };
+    // const handleUpdateQuote = (customerId: number, quoteId: string, newQuote: Partial<Quote>) => {
+    //     setCustomers(prev => prev.map(c =>
+    //         c.id === customerId
+    //         ? { ...c, quotes: c.quotes.map(q => q.id === quoteId ? {...q, ...newQuote} : q) }
+    //         : c
+    //     ));
+    // };
 
     const renderContent = () => {
         switch(view) {
-            case 'pipeline': return <PipelineView customers={customers} setCustomers={setCustomers} onSelectCustomer={setSelectedCustomer} />;
-            case 'contacts': return <ContactListView customers={customers} onSelectCustomer={setSelectedCustomer} />;
-            case 'support': return <SupportCenter tickets={tickets} customers={customers} setTickets={setTickets} onSelectTicket={handleSelectTicket} />;
-            case 'integrations': return <LeadCaptureView />;
-            case 'dashboard': default: return <Dashboard customers={customers} tickets={tickets} />;
+            case 'pipeline': return <PipelineView opportunities={opportunities} setOpportunities={setOpportunities} onSelectOpportunity={setSelectedOpportunity} />;
+            // case 'contacts': return <ContactListView customers={customers} onSelectCustomer={setSelectedCustomer} />;
+            // case 'support': return <SupportCenter tickets={tickets} customers={customers} setTickets={setTickets} onSelectTicket={handleSelectTicket} />;
+            // case 'integrations': return <LeadCaptureView />;
+            // case 'dashboard': default: return <Dashboard customers={customers} tickets={tickets} />;
+            default: return <PipelineView opportunities={opportunities} setOpportunities={setOpportunities} onSelectOpportunity={setSelectedOpportunity} />;
         }
     };
 
@@ -622,9 +607,9 @@ const Level2_Responses: React.FC = () => {
                 </main>
             </div>
 
-            {/* Slide-out Panels */}
-            <CustomerDetailPanel customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} onSelectTicket={handleSelectTicket} onUpdateQuote={handleUpdateQuote} />
-            <TicketDetailPanel ticket={selectedTicket} customers={customers} onClose={() => setSelectedTicket(null)} onUpdateTicket={handleUpdateTicket} />
+            {/* Slide-out Panels have been removed for now as they relied on the old data structure */}
+            {/* <CustomerDetailPanel customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} onSelectTicket={handleSelectTicket} onUpdateQuote={handleUpdateQuote} /> */}
+            {/* <TicketDetailPanel ticket={selectedTicket} customers={customers} onClose={() => setSelectedTicket(null)} onUpdateTicket={handleUpdateTicket} /> */}
         </div>
     );
 };
