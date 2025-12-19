@@ -3,16 +3,18 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from infrastructure.models import Embudo, Pagina, Bloque
-from bff.serializers.funnel_serializers import EmbudoSerializer, PaginaSerializer, BloqueSerializer
+from funnels.models import Funnel
+from bff.serializers.funnel_serializers import FunnelSerializer
 from domain.services import funnel_service
+from infrastructure.models import Pagina, Bloque
+from bff.serializers.funnel_serializers import PaginaSerializer, BloqueSerializer
 
 class EmbudoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para la gestión de Embudos en el constructor.
     Requiere autenticación y opera solo sobre los datos del tenant del usuario.
     """
-    serializer_class = EmbudoSerializer
+    serializer_class = FunnelSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -21,7 +23,7 @@ class EmbudoViewSet(viewsets.ModelViewSet):
         # Asumiendo que Embudo tiene una FK a Tenant.
         # Filtra los embudos para que solo pertenezcan al tenant del usuario.
         user_tenant = self.request.user.tenant
-        return Embudo.objects.filter(landing_page__subcategoria__categoria__tenant=user_tenant)
+        return Funnel.objects.filter(tenant=user_tenant)
 
     def retrieve(self, request, *args, **kwargs):
         tenant_id = request.user.tenant.id
@@ -34,7 +36,7 @@ class EmbudoViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
     def create(self, request, *args, **kwargs):
-        serializer = EmbudoCreateSerializer(data=request.data)
+        serializer = FunnelCreateSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
             embudo = funnel_service.create_full_funnel(
@@ -42,7 +44,7 @@ class EmbudoViewSet(viewsets.ModelViewSet):
                 subcategoria_id=data['subcategoria_id'],
                 nombre_embudo=data['nombre_embudo']
             )
-            return Response(EmbudoSerializer(embudo).data, status=status.HTTP_201_CREATED)
+            return Response(FunnelSerializer(embudo).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])

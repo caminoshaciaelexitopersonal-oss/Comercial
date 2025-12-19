@@ -17,7 +17,7 @@ import Settings from './components/Settings';
 import Login from './components/Login';
 
 const App = () => {
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('authToken'));
   const [activeView, setActiveView] = useState<AppView>(AppView.FUNNELS);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -33,6 +33,12 @@ const App = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleLoginSuccess = (token: string) => {
+    localStorage.setItem('authToken', token);
+    setAuthToken(token);
+    setActiveView(AppView.FUNNELS); // Redirect to a default view after login
+  };
 
   const navItems = [
     { id: AppView.COMMUNICATION, label: 'Marketing', icon: MegaphoneIcon },
@@ -108,6 +114,10 @@ const App = () => {
       </div>
     </nav>
   );
+
+  if (!authToken) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <SettingsProvider>
