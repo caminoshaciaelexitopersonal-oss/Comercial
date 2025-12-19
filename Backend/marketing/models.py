@@ -1,44 +1,68 @@
+# marketing/models.py
 from django.db import models
 from infrastructure.models import Tenant
-from django.conf import settings
+# from funnels.runtime_models import Lead # Se elimina para evitar importación circular
 
 class Campaign(models.Model):
+    """
+    Representa una campaña de marketing unificada.
+    """
+    STATUS_CHOICES = [
+        ('draft', 'Borrador'),
+        ('scheduled', 'Programada'),
+        ('sending', 'Enviando'),
+        ('sent', 'Enviada'),
+        ('archived', 'Archivada'),
+    ]
+
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='campaigns')
     name = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
+    # Podríamos vincular una campaña a un segmento de leads específico
+    target_leads = models.ManyToManyField('funnels.Lead', blank=True, related_name='marketing_campaigns')
+
     created_at = models.DateTimeField(auto_now_add=True)
-    # Estados posibles: draft, scheduled, sending, sent, failed
-    status = models.CharField(max_length=50, default='draft')
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
 class CampaignChannel(models.Model):
+    """
+    Define un canal específico para una campaña (ej. Email, SMS).
+    """
+    CHANNEL_CHOICES = [
+        ('email', 'Email'),
+        ('sms', 'SMS'),
+        ('whatsapp', 'WhatsApp'),
+        ('facebook', 'Facebook'),
+        ('instagram', 'Instagram'),
+    ]
+
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='channels')
-    # Tipos de canal: email, sms, instagram, facebook
-    channel_type = models.CharField(max_length=50)
-    # Aquí iría la configuración específica del canal, ej. la cuenta a usar
-    config_json = models.JSONField(default=dict)
-    is_active = models.BooleanField(default=True)
+    channel_type = models.CharField(max_length=20, choices=CHANNEL_CHOICES)
+    is_active = models.BooleanField(default=False)
+
+    # Podría contener métricas específicas del canal
+    sent_count = models.PositiveIntegerField(default=0)
+    open_rate = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.channel_type} for {self.campaign.name}"
+        return f"{self.campaign.name} - {self.get_channel_type_display()}"
 
-class MessageVariant(models.Model):
-    channel = models.ForeignKey(CampaignChannel, on_delete=models.CASCADE, related_name='variants')
-    content = models.TextField()
-    # Para A/B testing u otras variaciones
-    variant_name = models.CharField(max_length=100, default='A')
+class MarketingContent(models.Model):
+    """
+    Almacena el contenido maestro para una campaña, que puede ser
+    adaptado para diferentes canales.
+    """
+    campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE, related_name='content')
+    subject = models.CharField(max_length=255, blank=True, help_text="Asunto para emails")
+    body_text = models.TextField(blank=True, help_text="Contenido principal en texto plano o Markdown")
+    body_html = models.TextField(blank=True, help_text="Contenido HTML para emails")
 
-    def __str__(self):
-        return f"Variant {self.variant_name} for {self.channel}"
-
-class SendLog(models.Model):
-    variant = models.ForeignKey(MessageVariant, on_delete=models.CASCADE, related_name='logs')
-    sent_at = models.DateTimeField(auto_now_add=True)
-    recipient = models.CharField(max_length=255) # ej. email, phone number, user_id
-    # Estados: pending, success, failed
-    status = models.CharField(max_length=50, default='pending')
-    error_message = models.TextField(blank=True, null=True)
+    # Podríamos añadir campos para imágenes, videos, etc.
+    # main_image_url = models.URLField(blank=True)
 
     def __str__(self):
-        return f"Log for {self.variant} to {self.recipient} - {self.status}"
+        return f"Content for {self.campaign.name}"

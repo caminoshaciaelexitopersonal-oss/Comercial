@@ -14,8 +14,10 @@ import LevelPlaybooks from './components/LevelPlaybooks';
 import LevelAdminPanel from './components/LevelAdminPanel';
 import { SettingsProvider } from './context/SettingsContext';
 import Settings from './components/Settings';
+import Login from './components/Login';
 
 const App = () => {
+  const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('authToken'));
   const [activeView, setActiveView] = useState<AppView>(AppView.FUNNELS);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -31,6 +33,12 @@ const App = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleLoginSuccess = (token: string) => {
+    localStorage.setItem('authToken', token);
+    setAuthToken(token);
+    setActiveView(AppView.FUNNELS); // Redirect to a default view after login
+  };
 
   const navItems = [
     { id: AppView.COMMUNICATION, label: 'Marketing', icon: MegaphoneIcon },
@@ -48,11 +56,11 @@ const App = () => {
 
   const renderContent = () => {
     switch (activeView) {
-      case AppView.COMMUNICATION: return <Level1_Communication />;
+      case AppView.COMMUNICATION: return <Level1_Communication authToken={authToken!} />;
       case AppView.RESPONSES: return <Level2_Responses />;
       case AppView.AI_STUDIO: return <LevelAIStudio />;
-      case AppView.AUTOMATION: return <Level5_AutomationSuite />;
-      case AppView.FUNNELS: return <LevelFunnels />;
+      case AppView.AUTOMATION: return <Level5_AutomationSuite authToken={authToken!} />;
+      case AppView.FUNNELS: return <LevelFunnels authToken={authToken!} />;
       case AppView.PLAYBOOKS: return <LevelPlaybooks />;
       case AppView.ADMIN: return <Level6_AnalyticsAdmin />;
       case AppView.ADMIN_PANEL: return <LevelAdminPanel />;
@@ -106,6 +114,10 @@ const App = () => {
       </div>
     </nav>
   );
+
+  if (!authToken) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <SettingsProvider>

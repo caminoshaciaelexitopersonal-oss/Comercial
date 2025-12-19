@@ -20,6 +20,9 @@ urlpatterns = [
     # --- API del Estudio de IA ---
     path('ai/', include('bff.urls.ai_urls')),
 
+    # --- API de Ventas ---
+    path('sales/', include('bff.urls.sales_urls')),
+
     # --- API Privada del Constructor ---
     path('builder/', include(builder_router.urls)),
 

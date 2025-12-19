@@ -1,37 +1,49 @@
 # infrastructure/models.py
 from django.db import models
-from django.contrib.auth.models import AbstractUser
- 
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from simple_history.models import HistoricalRecords
 
-# Sobrescribimos el modelo Tenant para añadir los nuevos campos
 class Tenant(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Nombre de la Cadena")
-    primary_color = models.CharField(max_length=7, default="#FFFFFF", verbose_name="Color Primario")
-    metadata = models.JSONField(default=dict, blank=True)
- 
+    name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
         return self.name
 
- 
-# Mantenemos los modelos de usuario y rol para la autenticación
 class Role(models.Model):
     name = models.CharField(max_length=100)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='roles')
- 
     def __str__(self):
         return f"{self.name} ({self.tenant.name})"
 
-class User(AbstractUser):
- 
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(email, password, **extra_fields)
+
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     roles = models.ManyToManyField(Role, related_name='users', blank=True)
-    groups = None
-    user_permissions = None
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     def __str__(self):
-        return self.username
+        return self.email
 
 # --- Modelos para el Arquitecto de Embudos ---
 

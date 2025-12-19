@@ -1,6 +1,7 @@
 # bff/serializers/funnel_serializers.py
 from rest_framework import serializers
-from infrastructure.models import Categoria, Subcategoria, LandingPage, Embudo, Pagina, Bloque
+from funnels.models import Funnel, FunnelVersion, FunnelPage
+from infrastructure.models import Bloque, LandingPage, Pagina
 
 class BloqueSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,19 +14,30 @@ class PaginaSerializer(serializers.ModelSerializer):
         model = Pagina
         fields = ['id', 'tipo', 'orden', 'bloques']
 
-class EmbudoSerializer(serializers.ModelSerializer):
-    paginas = PaginaSerializer(many=True, read_only=True)
+class FunnelPageSerializer(serializers.ModelSerializer):
+    bloques = BloqueSerializer(many=True, read_only=True)
     class Meta:
-        model = Embudo
-        fields = ['id', 'nombre', 'orden', 'activo', 'paginas']
+        model = FunnelPage
+        fields = ['id', 'page_type', 'order_index', 'bloques']
+
+class FunnelVersionSerializer(serializers.ModelSerializer):
+    pages = FunnelPageSerializer(many=True, read_only=True)
+    class Meta:
+        model = FunnelVersion
+        fields = ['id', 'version_number', 'schema_json', 'created_at', 'is_active', 'pages']
+
+class FunnelSerializer(serializers.ModelSerializer):
+    versions = FunnelVersionSerializer(many=True, read_only=True)
+    class Meta:
+        model = Funnel
+        fields = ['id', 'name', 'status', 'created_at', 'updated_at', 'versions']
 
 class LandingPagePublicSerializer(serializers.ModelSerializer):
-    embudo = EmbudoSerializer(read_only=True)
+    funnel = FunnelSerializer(read_only=True)
     class Meta:
         model = LandingPage
-        fields = ['slug', 'embudo']
+        fields = ['slug', 'funnel']
 
-
-class EmbudoCreateSerializer(serializers.Serializer):
-    nombre_embudo = serializers.CharField(max_length=255)
-    subcategoria_id = serializers.IntegerField()
+class FunnelCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    landing_page_id = serializers.IntegerField()

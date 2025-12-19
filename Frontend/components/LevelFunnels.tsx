@@ -6,7 +6,7 @@ import Editor from './funnel-builder/Editor';
 import * as Icons from './icons';
 
 const FunnelBuilder: React.FC = () => {
-    const { activeFunnel, activeCadena } = useFunnelBuilder();
+    const { activeFunnel, activeCadena, setActiveFunnelId } = useFunnelBuilder();
 
     if (!activeCadena) {
         return (
@@ -26,8 +26,12 @@ const FunnelBuilder: React.FC = () => {
                     <div className="flex-1 flex items-center justify-center text-center text-muted-foreground p-8">
                         <div>
                             <Icons.CursorArrowRaysIcon className="w-16 h-16 mx-auto mb-4"/>
-                            <h2 className="text-2xl font-bold">Bienvenido al Arquitecto de Embudos</h2>
-                            <p className="max-w-md mt-2">Selecciona una cadena de valor y navega por la jerarquía para elegir o crear un embudo y empezar a editar.</p>
+                            <h2 className="text-2xl font-bold">No Funnels Found</h2>
+                            <p className="max-w-md mt-2">Get started by creating a new funnel.</p>
+                            <button className="mt-6 flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90" onClick={() => setActiveFunnelId('new')}>
+                                <Icons.PlusIcon className="w-5 h-5" />
+                                <span>Crear Embudo</span>
+                            </button>
                         </div>
                     </div>
                 )}
@@ -67,6 +71,10 @@ const Header: React.FC = () => {
                 </div>
             </div>
             <div className="flex items-center space-x-4">
+                <button className="flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors" onClick={() => setActiveFunnelId('new')}>
+                    <Icons.PlusIcon className="w-5 h-5"/>
+                    <span className="font-semibold">New Funnel</span>
+                </button>
                 <Icons.BellIcon className="w-6 h-6 text-muted-foreground"/>
                 <Icons.UserCircleIcon className="w-8 h-8 text-muted-foreground"/>
             </div>
@@ -75,8 +83,12 @@ const Header: React.FC = () => {
 }
 
 
-const LevelFunnels: React.FC = () => (
-    <FunnelBuilderProvider>
+interface LevelFunnelsProps {
+  authToken: string;
+}
+
+const LevelFunnels: React.FC<LevelFunnelsProps> = ({ authToken }) => (
+    <FunnelBuilderProvider authToken={authToken}>
         <div className="h-full flex flex-col font-sans text-foreground bg-background">
             <Header />
             <FunnelBuilder />
